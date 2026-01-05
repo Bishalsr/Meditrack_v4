@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="container mt-5">
+    <!-- Appointments Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
@@ -86,6 +87,44 @@
                     <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
                     <h4 class="mt-3 text-muted">No Appointments Found</h4>
                     <p class="text-muted">You don't have any scheduled appointments at the moment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Patient Files / Reports Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="fw-bold text-primary mb-3"><i class="bi bi-file-earmark-text me-2"></i>My Reports & Files</h3>
+        </div>
+    </div>
+
+    {% if files %}
+    <div class="row g-4">
+        {% for file in files %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title fw-bold">{{ file.title }}</h5>
+                        <p class="text-muted small mb-2">By Dr. {{ file.doctor.first_name }} {{ file.doctor.last_name }}</p>
+                        <p class="text-muted small mb-2">Uploaded on: {{ file.uploaded_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                    <a href="{{ file.file.url }}" class="btn btn-primary mt-2" target="_blank"><i class="bi bi-download me-1"></i>Download</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm text-center py-5">
+                <div class="card-body">
+                    <i class="bi bi-file-earmark-x text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-muted">No Reports Uploaded Yet</h4>
+                    <p class="text-muted">Your doctor has not uploaded any reports or files yet.</p>
                 </div>
             </div>
         </div>

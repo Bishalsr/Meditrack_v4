@@ -58,15 +58,15 @@ def doctor_list(request):
 @login_required
 def appointment_list(request):
     user = request.user
-    # If superuser, show all appointments
+    
     if user.is_superuser:
         appointments = Appointment.objects.all()
-    # If doctor, show only their appointments
+   
     elif user.is_staff:
         doctor = Doctor.objects.filter(user=user).first()
         appointments = Appointment.objects.filter(doctor=doctor)
     else:
-        # Patients should not access this page
+       
         return redirect('patient_dashboard')
 
     return render(request, 'hospital/appointment_list.html', {'appointments': appointments})
@@ -83,24 +83,50 @@ def user_login(request):
         if user is not None:
             login(request, user)
             if user.is_staff:
-                return redirect('home')  # staff dashboard
+                return redirect('home')  
             else:
-                return redirect('patient_dashboard')  # patient dashboard
+                return redirect('patient_dashboard') 
         else:
             messages.error(request, 'Invalid username or password.')
     return render(request, 'hospital/login.html')
 
 
+# @login_required
+# def patient_dashboard(request):
+#     try:
+#         patient = Patient.objects.get(user=request.user)
+#         appointments = Appointment.objects.filter(patient=patient)
+#         records = MedicalRecord.objects.filter(patient=patient)
+#     except Patient.DoesNotExist:
+#         patient = None
+#         appointments = []
+#         records = []
+
+#     return render(request, 'hospital/patient_dashboard.html', {
+#         'patient': patient,
+#         'appointments': appointments,
+#         'records': records
+#     })
 @login_required
 def patient_dashboard(request):
     try:
-     
-        patient = Patient.objects.get(email=request.user.email)
+        
+        patient = Patient.objects.get(user=request.user)
         appointments = Appointment.objects.filter(patient=patient)
+        files = PatientFile.objects.filter(patient=patient).order_by('-uploaded_at')
+        
     except Patient.DoesNotExist:
+        patient = None
         appointments = []
+        files = []
 
-    return render(request, 'hospital/patient_dashboard.html', {'appointments': appointments})
+    context = {
+        'patient': patient,
+        'appointments': appointments,
+        'files': files
+    }
+
+    return render(request, 'hospital/patient_dashboard.html', context)
 
 def landing_page(request):
     if request.user.is_authenticated:
@@ -110,8 +136,8 @@ def landing_page(request):
             return redirect('patient_dashboard')  # Patient dashboard
 
     context = {
-        'hospital_name': 'MediTrack Hospital',
-        'hospital_info': 'Welcome to MediTrack Hospital. We provide quality healthcare services.',
+        'hospital_name': 'MediTrack',
+        'hospital_info': 'Welcome to MediTrack. We provide quality services.',
         'services': ['General Consultation', 'Pediatrics', 'Cardiology', 'Dermatology', 'Neurology'],
     }
     return render(request, 'hospital/landing_page.html', context)
@@ -144,3 +170,33 @@ def feedback_submit(request):
             messages.error(request, 'Please fill all the fields.')
 
     return redirect('landing_page')
+
+
+@login_required
+def upload_patient_file(request, patient_id):
+    if not request.user.is_staff:
+        return redirect('home')
+
+    patient = Patient.objects.get(id=patient_id)
+    doctor = Doctor.objects.get(user=request.user)
+
+    if request.method == 'POST':
+        title = request.POST['title']
+        file = request.FILES['file']
+
+        PatientFile.objects.create(
+            patient=patient,
+            doctor=doctor,
+            title=title,
+            file=file
+        )
+        messages.success(request, "File uploaded successfully")
+        return redirect('doctor_dashboard')
+
+    return render(request, 'hospital/upload_file.html', {'patient': patient})
+
+@login_required
+def patient_files(request):
+    patient = Patient.objects.get(user=request.user)
+    files = PatientFile.objects.filter(patient=patient)
+    return render(request, 'hospital/patient_files.html', {'files': files})

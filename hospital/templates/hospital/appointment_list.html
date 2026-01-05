@@ -105,7 +105,7 @@
 </div>
 
 <script>
-    // Search functionality
+    
     document.getElementById('appointmentSearch').addEventListener('keyup', function () {
         const searchValue = this.value.toLowerCase();
         const table = document.getElementById('appointmentTable');
@@ -121,13 +121,13 @@
         }
     });
 
-    // Filter by status
+   
     function filterStatus(status) {
         const table = document.getElementById('appointmentTable');
         const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
         const buttons = document.querySelectorAll('.btn-group button');
 
-        // Update active button
+       
         buttons.forEach(btn => btn.classList.remove('active'));
         event.target.closest('button').classList.add('active');
 

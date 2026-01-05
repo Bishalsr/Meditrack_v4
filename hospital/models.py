@@ -3,12 +3,14 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 class Patient(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE,  null=True, blank=True)
+
     GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
         ('O', 'Other'),
     ]
-     
+
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     age = models.PositiveIntegerField()
@@ -93,3 +95,16 @@ class Feedback(models.Model):
 
     def __str__(self):
         return f"{self.name} - ({self.email})"
+    
+    
+    
+    
+class PatientFile(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True)
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='patient_files/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.patient}"

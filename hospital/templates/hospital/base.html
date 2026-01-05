@@ -1,250 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MediTrack{% endblock %}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MediTrack{% endblock %}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+:root{
+ --gold:#ffc107;
+ --dark:#0f0f1e;
+ --dark2:#16213e;
+ --card:#1a1a2e;
+}
+
+body{
+ background:var(--dark);
+ color:#e0e0e0;
+ min-height:100vh;
+ display:flex;
+ flex-direction:column;
+ font-family:'Segoe UI',sans-serif;
+}
 
 
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --primary-dark: #0a58ca;
-            --secondary-color: #6c757d;
-            --success-color: #198754;
-            --info-color: #0dcaf0;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --light-bg: #f8f9fa;
-            --card-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            --card-shadow-hover: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        }
+.navbar{
+ background:linear-gradient(135deg,#1a1a2e,#16213e);
+ box-shadow:0 5px 20px rgba(0,0,0,.6);
+}
+.navbar-brand,.navbar-text,.nav-link{color:white!important}
+.nav-link:hover{color:var(--gold)!important}
 
-        * {
-            scroll-behavior: smooth;
-        }
 
-        body {
-            background-color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+.btn-login,.btn-logout{
+ background:var(--gold);
+ color:#000;
+ border:none;
+}
+.btn-login:hover,.btn-logout:hover{
+ background:#e6ac00;
+ color:#000;
+}
 
-        .navbar {
-            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 0.75rem 1rem;
-        }
 
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
-            letter-spacing: 0.5px;
-            transition: transform 0.3s ease;
-        }
+.content-wrapper{flex:1;padding:2rem 0}
 
-        .navbar-brand:hover {
-            transform: scale(1.05);
-        }
 
-        .navbar-nav .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-weight: 500;
-            margin: 0 5px;
-            padding: 8px 16px !important;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
+.card{
+ background:var(--card);
+ color:white;
+ border-radius:16px;
+ box-shadow:0 12px 30px rgba(0,0,0,.5);
+}
 
-        .navbar-nav .nav-link:hover {
-            color: #fff !important;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
 
-        .navbar-nav .nav-link.active {
-            background: rgba(255, 255, 255, 0.25);
-        }
+.table{
+ color:white;
+}
+.table thead{
+ background:#16213e;
+}
 
-        .navbar-text {
-            font-weight: 600;
-            color: #fff !important;
-        }
 
-        .btn-login {
-            background-color: #fff;
-            color: #0d6efd;
-            border: 2px solid #fff;
-            font-weight: 600;
-            padding: 6px 20px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-login:hover {
-            background-color: transparent;
-            color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-logout {
-            background-color: #fff;
-            color: #dc3545;
-            border: 2px solid #fff;
-            font-weight: 600;
-            padding: 6px 20px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-logout:hover {
-            background-color: #dc3545;
-            color: #fff;
-            border-color: #dc3545;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .content-wrapper {
-            flex: 1;
-            padding-bottom: 2rem;
-        }
-
-        footer {
-            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-top: auto;
-        }
-
-        footer a {
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        footer a:hover {
-            color: #fff;
-        }
-
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: var(--card-shadow);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            box-shadow: var(--card-shadow-hover);
-            transform: translateY(-5px);
-        }
-
-        .table {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .badge {
-            padding: 0.5em 0.75em;
-            font-weight: 500;
-        }
-    </style>
+footer{
+ background:#0a0a15;
+ color:white;
+}
+footer a{color:var(--gold)}
+footer a:hover{color:white}
+</style>
 </head>
-{% if messages %}
-<div class="container mt-3">
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand text-white" href="{% url 'landing_page' %}">MediTrack</a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<nav class="navbar navbar-expand-lg navbar-dark">
+<div class="container-fluid">
+<a class="navbar-brand" href="{% url 'landing_page' %}">MediTrack</a>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    {% if user.is_authenticated %}
-                    {% if user.is_staff and not user.is_superuser %}
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+<span class="navbar-toggler-icon"></span>
+</button>
 
-                    <li class="nav-item"><a class="nav-link" href="{% url 'doctor_dashboard' %}">My Patients</a></li>
+<div class="collapse navbar-collapse" id="navbarNav">
+<ul class="navbar-nav me-auto">
+{% if user.is_authenticated %}
+{% if user.is_staff and not user.is_superuser %}
+<li class="nav-item"><a class="nav-link" href="{% url 'doctor_dashboard' %}">My Patients</a></li>
+{% elif user.is_superuser %}
+<li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Dashboard</a></li>
+<li class="nav-item"><a class="nav-link" href="{% url 'patient_list' %}">Patients</a></li>
+<li class="nav-item"><a class="nav-link" href="{% url 'doctor_list' %}">Doctors</a></li>
+<li class="nav-item"><a class="nav-link" href="{% url 'appointment_list' %}">Appointments</a></li>
+{% endif %}{% endif %}
+</ul>
 
-                    {% elif user.is_superuser %}
+<ul class="navbar-nav ms-auto">
+{% if user.is_authenticated %}
+<li class="nav-item me-2"><span class="navbar-text">👤 {{ user.username }}</span></li>
+<li class="nav-item">
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}
+<button class="btn btn-logout">Logout</button>
+</form>
+</li>
+{% else %}
+<li class="nav-item"><a href="{% url 'login' %}" class="btn btn-login">Login</a></li>
+{% endif %}
+</ul>
+</div>
+</div>
+</nav>
 
-                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'patient_list' %}">Patients</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'doctor_list' %}">Doctors</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'appointment_list' %}">Appointments</a></li>
+<div class="content-wrapper">{% block content %}{% endblock %}</div>
 
-                    {% endif %}
-                    {% endif %}
-                </ul>
+<footer class="mt-auto py-4">
+<div class="container">
+<div class="row">
+<div class="col-md-6">
+<h5>MediTrack</h5>
+<p class="small">Advanced Patient Management System</p>
+</div>
+<div class="col-md-6 text-md-end">
+<a href="mailto:contact@meditrack.com">contact@meditrack.com</a>
+<p class="small">&copy; 2026 MediTrack</p>
+</div>
+</div>
+</div>
+</footer>
 
-
-                <ul class="navbar-nav ms-auto align-items-center">
-                    {% if user.is_authenticated %}
-                    <li class="nav-item me-2">
-                        <span class="navbar-text text-white">
-                            👤 {{ user.username }}
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <form method="post" action="{% url 'logout' %}" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-logout">Logout</button>
-                        </form>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a href="{% url 'login' %}" class="btn btn-login">Login</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="content-wrapper">
-        {% block content %}
-        {% endblock %}
-    </div>
-
-    <footer class="mt-auto">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    <h5 class="fw-bold">🏥 MediTrack</h5>
-                    <p class="mb-0 small">Your trusted healthcare management system</p>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <p class="mb-2 small">
-                        <a href="mailto:contact@meditrack.com" class="me-3"><i class="bi bi-envelope-fill me-1"></i>
-                            Contact Us</a>
-                        <a href="#" class="me-3"><i class="bi bi-telephone-fill me-1"></i> Support</a>
-                    </p>
-                    <p class="mb-0 small">&copy; 2026 MediTrack. All rights reserved.</p>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
