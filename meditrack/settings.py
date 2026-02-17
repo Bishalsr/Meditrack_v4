@@ -11,9 +11,30 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Always load local project env vars, even when started outside project root.
+load_dotenv(BASE_DIR / ".env")
+
+
+def _env(name: str) -> str:
+    return (os.getenv(name) or "").strip().strip('"').strip("'")
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'APP': {
+            'client_id': _env('GOOGLE_OAUTH_CLIENT_ID'),
+            'secret': _env('GOOGLE_OAUTH_CLIENT_SECRET'),
+        },
+    }
+}
 
 
 # Quick-start development settings - unsuitable for production
@@ -25,7 +46,8 @@ SECRET_KEY = 'django-insecure-2s5pp1hl^x*_wqk#owv-wzy9^&t7dws#_7qq_&3c=a39v&0pfo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 
 # Application definition
@@ -38,17 +60,26 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  
+    
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    
     'hospital',
+    'accounts',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'meditrack.middleware.SplitSessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'meditrack.urls'
@@ -56,7 +87,7 @@ ROOT_URLCONF = 'meditrack.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -113,6 +144,47 @@ USE_I18N = True
 USE_TZ = True
 
 
+
+SITE_ID = 1
+
+
+LOGIN_URL = 'accounts:login'
+LOGOUT_URL = 'accounts:logout'
+LOGIN_REDIRECT_URL = 'hospital:home'
+LOGOUT_REDIRECT_URL = 'hospital:landing_page'
+
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+# Allauth settings
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_ADAPTER = 'allauth.account.adapter.DefaultAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'accounts.social_adapter.MeditrackSocialAccountAdapter'
+ACCOUNT_EMAIL_VERIFICATION = 'none' 
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Admin check expects Django's default SessionMiddleware path string.
+# We intentionally use custom split-session middleware instead.
+SILENCED_SYSTEM_CHECKS = ["admin.E410"]
+
+# Keep OAuth state/session cookie behavior explicit for local dev.
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = False
+APP_SESSION_COOKIE_NAME = "app_sessionid"
+APP_SESSION_COOKIE_PATH = "/"
+ADMIN_SESSION_COOKIE_NAME = "admin_sessionid"
+ADMIN_SESSION_COOKIE_PATH = "/admin/"
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
@@ -126,3 +198,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# Email settings:
+# In local DEBUG, default to console backend to avoid SMTP connection errors.
+# Set EMAIL_BACKEND in .env to use real SMTP, e.g.:
+# django.core.mail.backends.smtp.EmailBackend
+EMAIL_BACKEND = _env("EMAIL_BACKEND") or (
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = _env("EMAIL_HOST") or "smtp.gmail.com"
+EMAIL_PORT = int(_env("EMAIL_PORT") or "587")
+EMAIL_HOST_USER = _env("EMAIL_HOST_USER") or _env("DEFAULT_FROM_EMAIL")
+EMAIL_HOST_PASSWORD = _env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = (_env("EMAIL_USE_TLS") or "true").lower() in {"1", "true", "yes", "on"}
+DEFAULT_FROM_EMAIL = _env("DEFAULT_FROM_EMAIL") or "no-reply@localhost"

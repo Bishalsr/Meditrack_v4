@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Medical File | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="d-flex align-items-center gap-3 mb-5">
+                <a href="{% url 'hospital:doctor_dashboard' %}" class="btn btn-light border btn-sm rounded-circle p-2"
+                    style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left text-primary fw-bold"></i>
+                </a>
+                <div>
+                    <h1 class="fw-black mb-1">Upload <span class="text-primary">Medical File</span></h1>
+                    <p class="text-muted mb-0">Upload a file for {{ patient.first_name }} {{ patient.last_name }}.</p>
+                </div>
+            </div>
+
+            <div class="medical-card p-5 border-0 shadow-lg">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">File
+                            Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g., Q1 Hematology Report"
+                            required>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Choose
+                            File</label>
+                        <div class="upload-area text-center p-5 rounded-4 border-dashed bg-light">
+                            <i class="bi bi-cloud-arrow-up display-5 text-primary opacity-25 mb-3 d-block"></i>
+                            <input type="file" name="file"
+                                class="form-control bg-transparent border-0 text-center fw-bold" required>
+                            <p class="x-small text-muted mt-2 fw-bold text-uppercase">Secure file upload</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-top d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-5 py-3 fw-bold flex-grow-1 fs-5">
+                            Upload File <i class="bi bi-shield-lock ms-2"></i>
+                        </button>
+                        <a href="{% url 'hospital:doctor_dashboard' %}"
+                            class="btn btn-light border px-4 py-3 fw-bold rounded-4"
+                            data-confirm="Are you sure you want to cancel? Unsaved changes will be lost.">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .border-dashed {
+        border: 2px dashed #d1d5db !important;
+    }
+
+    .x-small {
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+    }
+
+    .form-control {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        padding: 0.85rem 1.25rem;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}

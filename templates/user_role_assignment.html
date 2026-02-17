@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}User Role Assignment | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-5 flex-wrap g-3">
+        <div>
+            <h1 class="fw-black mb-1">User <span class="text-primary">Role Assignment</span></h1>
+            <p class="text-muted fs-5 mb-0">
+                {% if user.is_superuser %}
+                Assign each account as patient, doctor, or receptionist.
+                {% else %}
+                Assign users as patient or doctor only.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="medical-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted x-small text-uppercase fw-bold">User</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Current Role</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Joined</th>
+                        <th class="pe-4 py-3 text-muted x-small text-uppercase fw-bold text-end">Assign</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for target_user in users %}
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td class="ps-4 py-3">
+                            <div class="fw-bold text-dark">{{ target_user.email }}</div>
+                            {% if target_user.is_superuser %}
+                            <div class="x-small text-primary fw-bold text-uppercase">System Admin</div>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            {% if target_user.is_superuser %}
+                            <span class="badge bg-dark-subtle text-dark fw-bold">Superuser</span>
+                            {% elif target_user.is_receptionist %}
+                            <span class="badge bg-primary-light text-primary fw-bold">Receptionist</span>
+                            {% elif target_user.is_doctor %}
+                            <span class="badge bg-success-subtle text-success fw-bold">Doctor</span>
+                            {% elif target_user.is_patient %}
+                            <span class="badge bg-info-subtle text-info fw-bold">Patient</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-muted fw-bold">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 text-muted">{{ target_user.date_joined|date:"M d, Y h:i A" }}</td>
+                        <td class="pe-4 py-3 text-end">
+                            {% if target_user.is_superuser %}
+                            <span class="text-muted small fw-bold">Manage in Admin Panel</span>
+                            {% else %}
+                            <form method="post" class="d-inline-flex gap-2 align-items-center">
+                                {% csrf_token %}
+                                <input type="hidden" name="user_id" value="{{ target_user.id }}">
+                                <select name="role" class="form-select form-select-sm" style="min-width: 180px;">
+                                    <option value="patient" {% if target_user.is_patient and not target_user.is_doctor and not target_user.is_receptionist %}selected{% endif %}>Patient</option>
+                                    <option value="doctor" {% if target_user.is_doctor %}selected{% endif %}>Doctor</option>
+                                    {% if allow_receptionist_role %}
+                                    <option value="receptionist" {% if target_user.is_receptionist %}selected{% endif %}>Receptionist</option>
+                                    {% endif %}
+                                    {% if allow_unassign %}
+                                    <option value="unassigned" {% if not target_user.is_patient and not target_user.is_doctor and not target_user.is_receptionist and not target_user.is_superuser %}selected{% endif %}>Unassigned</option>
+                                    {% endif %}
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">
+                                    Save
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted bg-light">No users found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}

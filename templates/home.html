@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Overview | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5 align-items-end">
+        <div class="col-lg-8">
+            <h1 class="fw-bold display-5 mb-2">Hospital <span class="text-primary">Overview</span></h1>
+            <p class="text-muted fs-5 mb-0">Quick summary of key hospital numbers.</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            
+        </div>
+    </div>
+
+    <!-- Metrics Row -->
+    <div class="row g-5 mb-5">
+        <div class="col-lg-4">
+            <div class="medical-card p-5 border-0"
+                style="background: linear-gradient(to bottom right, #ffffff, #f0fdf4);">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div class="icon-box-emerald">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary-light text-primary rounded-pill px-3 py-1 fw-bold">Updated</span>
+                    </div>
+                </div>
+                <h5 class="text-muted small fw-bold text-uppercase mb-1 letter-spacing-1">Active Patients</h5>
+                <h2 class="display-4 fw-black mb-0" style="color: #064e3b;">{{ total_patients }}</h2>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="medical-card p-5 border-0"
+                style="background: linear-gradient(to bottom right, #ffffff, #fffbeb);">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div class="icon-box-emerald" style="background: #fef3c7; color: #d97706;">
+                        <i class="bi bi-person-workspace"></i>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-1 fw-bold">Updated</span>
+                    </div>
+                </div>
+                <h5 class="text-muted small fw-bold text-uppercase mb-1 letter-spacing-1">Doctors</h5>
+                <h2 class="display-4 fw-black mb-0" style="color: #451a03;">{{ total_doctors }}</h2>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="medical-card p-5 border-0"
+                style="background: linear-gradient(to bottom right, #ffffff, #eff6ff);">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div class="icon-box-emerald" style="background: #dbeafe; color: #2563eb;">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-1 fw-bold">Updated</span>
+                    </div>
+                </div>
+                <h5 class="text-muted small fw-bold text-uppercase mb-1 letter-spacing-1">Total Appointments</h5>
+                <h2 class="display-4 fw-black mb-0" style="color: #1e3a8a;">{{ total_appointments }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="medical-card overflow-hidden">
+        <div class="p-4 border-bottom bg-light d-flex justify-content-between align-items-center">
+            <h4 class="fw-bold m-0 fs-5"><i class="bi bi-table me-2 text-primary"></i>Recent Appointments</h4>
+            <a href="{% url 'hospital:appointment_list' %}"
+                class="btn btn-sm btn-outline-emerald fw-bold rounded-pill">View All</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-5 py-3 text-muted x-small text-uppercase fw-bold">Patient</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Doctor</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Date and Time</th>
+                        <th class="pe-5 py-3 text-muted x-small text-uppercase fw-bold text-end">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for appt in recent_appointments %}
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td class="ps-5 py-4">
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold text-dark">{{ appt.patient.first_name }} {{ appt.patient.last_name}}</span>
+                            </div>
+                        </td>
+                        <td class="py-4">
+                            <span class="text-muted fw-medium">Dr. {{ appt.doctor.last_name }}</span>
+                        </td>
+                        <td class="py-4">
+                            <span class="small fw-semibold text-secondary">{{ appt.appointment_date|date:"F d" }} <span
+                                    class="text-muted mx-1">@</span> {{ appt.appointment_date|date:"H:i" }}</span>
+                        </td>
+                        <td class="pe-5 py-4 text-end">
+                            <span class="badge rounded-pill px-3 py-2 
+                                {% if appt.status == 'Completed' %}bg-success bg-opacity-10 text-success
+                                {% elif appt.status == 'Pending' %}bg-warning bg-opacity-10 text-warning
+                                {% else %}bg-secondary bg-opacity-10 text-muted{% endif %} fw-bold small">
+                                <i class="bi bi-circle-fill me-2" style="font-size: 0.5rem;"></i>{{ appt.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="bi bi-layers display-4 d-block mb-3 opacity-25"></i>
+                            No appointments found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 900;
+        letter-spacing: -2px;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    .pulse-emerald {
+        width: 10px;
+        height: 10px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+    }
+</style>
+{% endblock %}

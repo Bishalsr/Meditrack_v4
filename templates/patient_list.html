@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient List | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-5 g-4 flex-wrap">
+        <div>
+            <h1 class="fw-black mb-1">Patient <span class="text-primary">List</span></h1>
+            <p class="text-muted fs-5 mb-0">All registered hospital patients.</p>
+        </div>
+        <div class="d-flex gap-3">
+            <form method="get" class="d-flex gap-2">
+                <div class="input-group" style="min-width: 300px;">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 bg-white"
+                        placeholder="Search by name or ID...">
+                </div>
+            </form>
+            {% if user.is_superuser or user.is_receptionist %}
+            <a href="{% url 'hospital:add_patient' %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <i class="bi bi-person-plus-fill"></i> New Registration
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats Snapshot -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="medical-card p-4 text-center">
+                <div class="h3 fw-black mb-1 text-primary">{{ patients|length }}</div>
+                <div class="text-muted small fw-bold text-uppercase letter-spacing-1">Total Patients</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="medical-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-5 py-3 text-muted x-small text-uppercase fw-bold">Patient</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Details</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Contact</th>
+                        <th class="pe-5 py-3 text-muted x-small text-uppercase fw-bold text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for patient in patients %}
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td class="ps-5 py-4">
+                            <div>
+                                <div class="fw-bold text-dark">{{ patient.first_name }} {{ patient.last_name }}</div>
+                                
+                            </div>
+                        </td>
+                        <td class="py-4">
+                            <span class="small fw-bold text-secondary">{{ patient.get_gender_display }}</span>
+                            <span class="text-muted x-small d-block">{{ patient.age }} Years Old</span>
+                        </td>
+                        <td class="py-4">
+                            
+                            <div class="x-small text-muted">{{ patient.email }}</div>
+                        </td>
+                        <td class="pe-5 py-4 text-end">
+                            {% if user.is_superuser or user.is_receptionist %}
+                            <div class="btn-group">
+                                <a href="{% url 'hospital:edit_patient' patient.pk %}"
+                                    class="btn btn-sm btn-light border p-2" title="Edit Profile">
+                                    <i class="bi bi-pencil-square text-primary"></i>
+                                </a>
+                                <a href="{% url 'hospital:delete_patient' patient.pk %}"
+                                    class="btn btn-sm btn-light border p-2" title="Delete Patient"
+                                    data-confirm="Are you sure you want to delete this patient?">
+                                    <i class="bi bi-trash text-danger"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small italic">Read only</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted bg-light">No patients found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -2px;
+        color: #111827;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}

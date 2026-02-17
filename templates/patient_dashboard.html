@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient Dashboard | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5 align-items-center g-4">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-4">
+                <div class="icon-box-emerald" style="width: 80px; height: 80px; font-size: 2rem;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <h1 class="fw-black mb-1">Hi, <span class="text-primary">{{patient.first_name|default:"Patient" }}</span></h1>
+                    <p class="text-muted fs-5 mb-0">View your appointments and medical files.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="bg-white border p-1 rounded-pill d-inline-flex gap-1 shadow-sm">
+                <div class="px-4 py-2 rounded-pill bg-primary-light text-primary fw-bold small">
+                    {{ appointments|length }} Appointments
+                </div>
+                <div class="px-4 py-2 rounded-pill bg-light text-muted fw-bold small">
+                    {{ files|length }} Reports
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments -->
+    <div class="mb-5 pb-4">
+        <div class="d-flex align-items-center justify-content-between mb-5">
+            <h3 class="fw-bold m-0 h4"><i class="bi bi-clock-history me-3 text-primary"></i>Upcoming Appointments</h3>
+            
+        </div>
+
+        {% if appointments %}
+        <div class="row g-5">
+            {% for appointment in appointments %}
+            <div class="col-lg-4 col-md-6">
+                <div class="medical-card p-5 border-start-emerald">
+                    <div class="d-flex align-items-center gap-3 mb-4 pb-4 border-bottom">
+                        <div class="rounded-pill bg-light p-2 border">
+                            <i class="bi bi-person-badge text-primary px-1"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Dr. {{ appointment.doctor.first_name }} {{appointment.doctor.last_name }}</h5>
+                            <span class="text-muted small fw-medium">{{
+                                appointment.doctor.get_specialization_display|default:"Medical Specialist" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <i class="bi bi-calendar-event text-secondary"></i>
+                            <span class="fw-bold text-dark">{{ appointment.appointment_date|date:"l, F d, Y" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <i class="bi bi-stopwatch text-secondary"></i>
+                            <span class="text-muted fw-medium">{{ appointment.appointment_date|date:"h:i A" }}</span>
+                        </div>
+                        {% if appointment.reason %}
+                        <div
+                            class="p-3 bg-light rounded-3 border-start border-3 border-primary italic small text-secondary">
+                            "{{ appointment.reason|truncatewords:25 }}"
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge px-3 py-2 rounded-pill 
+                                {% if appointment.status == 'Completed' %}bg-success bg-opacity-10 text-success
+                                {% elif appointment.status == 'Pending' %}bg-warning bg-opacity-10 text-warning
+                                {% else %}bg-secondary bg-opacity-10 text-muted{% endif %} fw-bold">
+                            {{ appointment.status }}
+                        </span>
+                        {% if appointment.doctor.room_number %}
+                        <div class="small fw-bold text-muted">Room {{ appointment.doctor.room_number }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="medical-card text-center py-5 border-dashed bg-light">
+            <i class="bi bi-calendar-x display-3 text-muted mb-4 d-block opacity-25"></i>
+            <h5 class="fw-bold text-secondary">No appointments yet</h5>
+            <p class="text-muted small">Your appointments will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Files -->
+    <div class="mt-5">
+        <h3 class="fw-bold mb-5 h4"><i class="bi bi-folder2-open me-3 text-success"></i>Medical Files</h3>
+
+        {% if files %}
+        <div class="row g-4">
+            {% for file in files %}
+            <div class="col-lg-4 col-md-6">
+                <div class="medical-card p-4 hover-lift">
+                    <div class="d-flex align-items-start gap-4">
+                        <div class="icon-box-emerald mb-0" style="background: #f0fdf4; color: #10b981;">
+                            <i class="bi bi-file-earmark-medical"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-1">{{ file.title }}</h5>
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-clock me-1"></i>{{ file.uploaded_at|date:"M d, Y" }}
+                            </p>
+
+                            <div class="d-flex gap-3 small fw-semibold">
+                                <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none text-primary">
+                                    <i class="bi bi-eye me-1"></i>Open
+                                </a>
+                                <a href="{% url 'hospital:download_patient_file' file.id %}" class="text-decoration-none text-secondary">
+                                    <i class="bi bi-download me-1"></i>Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="medical-card text-center py-5 border-dashed opacity-50">
+            <i class="bi bi-shield-lock display-3 text-muted mb-3 d-block"></i>
+            <h5 class="text-muted">No files available</h5>
+            <p class="small text-muted mb-0">Reports shared by your doctor will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -2px;
+        color: #111827;
+    }
+
+    .border-start-emerald {
+        border-left: 6px solid var(--primary) !important;
+    }
+
+    .border-dashed {
+        border-style: dashed !important;
+        border-width: 2px !important;
+        border-color: #d1d5db !important;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}

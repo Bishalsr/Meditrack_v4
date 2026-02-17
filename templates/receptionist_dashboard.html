@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Receptionist Dashboard | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5 align-items-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-4">
+                <div class="icon-box-emerald" style="width: 80px; height: 80px; font-size: 2rem;">
+                    <i class="bi bi-person-gear"></i>
+                </div>
+                <div>
+                    <h1 class="fw-black mb-1">Reception <span class="text-primary">Dashboard</span></h1>
+                    <p class="text-muted fs-5 mb-0">Manage patients, doctors, appointments, and records.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <span
+                class="badge bg-primary-light text-primary rounded-pill px-4 py-2 fw-bold text-uppercase letter-spacing-1">
+                Role: Receptionist
+            </span>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'hospital:patient_list' %}" class="text-decoration-none">
+                <div class="medical-card p-4 text-center group h-100 border-0 shadow-sm hover-lift">
+                    <div class="icon-box-emerald mx-auto mb-3">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Patients</h5>
+                    <p class="text-muted x-small mb-0">View and manage patient records</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'hospital:doctor_list' %}" class="text-decoration-none">
+                <div class="medical-card p-4 text-center group h-100 border-0 shadow-sm hover-lift">
+                    <div class="icon-box-emerald mx-auto mb-3" style="background: #f0fdf4; color: #10b981;">
+                        <i class="bi bi-heart-pulse-fill"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Doctors</h5>
+                    <p class="text-muted x-small mb-0">View and manage doctor profiles</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'hospital:appointment_list' %}" class="text-decoration-none">
+                <div class="medical-card p-4 text-center group h-100 border-0 shadow-sm hover-lift">
+                    <div class="icon-box-emerald mx-auto mb-3" style="background: #fffbeb; color: #d97706;">
+                        <i class="bi bi-calendar-check-fill"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Appointments</h5>
+                    <p class="text-muted x-small mb-0">View and update schedules</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'hospital:medical_record_list' %}" class="text-decoration-none">
+                <div class="medical-card p-4 text-center group h-100 border-0 shadow-sm hover-lift">
+                    <div class="icon-box-emerald mx-auto mb-3" style="background: #eff6ff; color: #2563eb;">
+                        <i class="bi bi-journal-medical"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Medical Records</h5>
+                    <p class="text-muted x-small mb-0">Diagnosis and treatment notes</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'hospital:add_appointment' %}" class="text-decoration-none">
+                <div class="medical-card p-4 text-center group h-100 border-0 shadow-sm hover-lift"
+                    style="background: var(--primary-light);">
+                    <div class="icon-box-emerald mx-auto mb-3 bg-white shadow-sm">
+                        <i class="bi bi-plus-circle text-primary"></i>
+                    </div>
+                    <h5 class="fw-bold text-primary mb-1">New Appointment</h5>
+                    <p class="text-primary opacity-75 x-small mb-0">Create a schedule entry</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Patients -->
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <div class="medical-card overflow-hidden h-100 border-0 shadow-sm">
+                <div class="p-4 border-bottom bg-light d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold m-0 fs-5">Recent Patients</h4>
+                    <span class="badge bg-white border text-muted px-3 py-1 fw-bold">Latest Entries</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3 text-muted x-small text-uppercase">Name</th>
+                                <th class="py-3 text-muted x-small text-uppercase">Type</th>
+                                <th class="pe-4 py-3 text-muted x-small text-uppercase text-end">Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in recent_patients %}
+                            <tr style="border-bottom: 1px solid #f3f4f6;">
+                                <td class="ps-4 py-3">
+                                    <div class="fw-bold text-dark">{{ patient.first_name }} {{ patient.last_name }}
+                                    </div>
+                                    <div class="text-muted x-small">Added: {{ patient.date_registered|date:"M d" }}
+                                    </div>
+                                </td>
+                                <td class="py-3"><span
+                                        class="badge bg-primary-light text-primary fw-bold x-small">Patient
+                                        Record</span></td>
+                                <td class="pe-4 py-3 text-end"><span class="small fw-medium text-muted">{{
+                                        patient.phone|default:"---" }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted small bg-light">No recent patient
+                                    entries found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="medical-card p-5 h-100 border-0 shadow-sm">
+                <h4 class="fw-black mb-4 h5">Quick Actions</h4>
+                <div class="d-grid gap-3">
+                    <a href="{% url 'hospital:add_patient' %}"
+                        class="btn btn-light border text-start p-3 rounded-4 d-flex align-items-center gap-3 hover-lift">
+                        <div class="icon-box-emerald mb-0" style="width: 40px; height: 40px; font-size: 1rem;"><i
+                                class="bi bi-person-plus"></i></div>
+                        <span class="fw-bold text-dark">Add Patient</span>
+                    </a>
+                    <a href="{% url 'hospital:add_doctor' %}"
+                        class="btn btn-light border text-start p-3 rounded-4 d-flex align-items-center gap-3 hover-lift">
+                        <div class="icon-box-emerald mb-0"
+                            style="width: 40px; height: 40px; font-size: 1rem; background: #ecfdf5; color: #10b981;"><i
+                                class="bi bi-hospital"></i></div>
+                        <span class="fw-bold text-dark">Add Doctor</span>
+                    </a>
+                    <a href="{% url 'hospital:appointment_list' %}"
+                        class="btn btn-light border text-start p-3 rounded-4 d-flex align-items-center gap-3 hover-lift">
+                        <div class="icon-box-emerald mb-0"
+                            style="width: 40px; height: 40px; font-size: 1rem; background: #fffbeb; color: #d97706;"><i
+                                class="bi bi-clock"></i></div>
+                        <span class="fw-bold text-dark">View Appointments</span>
+                    </a>
+                    <a href="{% url 'hospital:add_medical_record' %}"
+                        class="btn btn-light border text-start p-3 rounded-4 d-flex align-items-center gap-3 hover-lift">
+                        <div class="icon-box-emerald mb-0"
+                            style="width: 40px; height: 40px; font-size: 1rem; background: #eff6ff; color: #2563eb;"><i
+                                class="bi bi-journal-plus"></i></div>
+                        <span class="fw-bold text-dark">Add Medical Record</span>
+                    </a>
+                    <a href="{% url 'hospital:user_role_assignment' %}"
+                        class="btn btn-light border text-start p-3 rounded-4 d-flex align-items-center gap-3 hover-lift">
+                        <div class="icon-box-emerald mb-0"
+                            style="width: 40px; height: 40px; font-size: 1rem; background: #f0f9ff; color: #0284c7;"><i
+                                class="bi bi-person-gear"></i></div>
+                        <span class="fw-bold text-dark">Assign User Roles</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .x-small {
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-3px);
+        transition: all 0.2s ease;
+    }
+</style>
+{% endblock %}

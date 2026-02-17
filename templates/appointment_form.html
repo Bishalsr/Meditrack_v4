@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Appointment | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3 mb-5">
+                <a href="{% url 'hospital:appointment_list' %}" class="btn btn-light border btn-sm rounded-circle p-2"
+                    style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left text-primary fw-bold"></i>
+                </a>
+                <div>
+                    <h1 class="fw-black mb-1">{% if appointment %}Edit{% else %}Add{% endif %} <span
+                            class="text-primary">Appointment</span></h1>
+                    <p class="text-muted mb-0">
+                        {% if appointment %}
+                        Update appointment details for ID {{ appointment.pk }}.
+                        {% else %}
+                        Create a new appointment.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="medical-card p-5 border-0 shadow-lg">
+                <form method="post" class="needs-validation">
+                    {% csrf_token %}
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Patient</label>
+                            <select name="patient" class="form-select" required>
+                                <option value="" disabled {% if not appointment %}selected{% endif %}>Select patient...
+                                </option>
+                                {% for p in patients %}
+                                <option value="{{ p.pk }}" {% if appointment and appointment.patient.pk == p.pk %}selected{% endif %}>{{ p.first_name }} {{ p.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Doctor</label>
+                            <select name="doctor" class="form-select" required>
+                                <option value="" disabled {% if not appointment %}selected{% endif %}>Select
+                                    doctor...</option>
+                                {% for d in doctors %}
+                                <option value="{{ d.pk }}" {% if appointment and appointment.doctor.pk == d.pk %}selected{% endif %}>Dr.
+                                    {{ d.last_name }} ({{ d.get_specialization_display }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label
+                                class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Date and Time</label>
+                            <input type="datetime-local" name="appointment_date" class="form-control"
+                                value="{{ appointment.appointment_date|date:'Y-m-d\TH:i' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Status</label>
+                            <select name="status" class="form-select" required>
+                                {% for val, label in status_choices %}
+                                <option value="{{ val }}" {% if appointment and appointment.status == val %}selected{% endif %}>{{ label}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Reason /
+                            Notes</label>
+                        <textarea name="reason" class="form-control" rows="4"
+                            placeholder="Write a short reason for this appointment...">{{ appointment.reason|default:'' }}</textarea>
+                    </div>
+
+                    <div class="pt-4 border-top d-flex gap-3">
+                        <button type="submit" class="btn btn-primary px-5 py-3 fw-bold flex-grow-1 fs-5">
+                            {% if appointment %}Save Changes{% else %}Save Appointment{% endif %} <i
+                                class="bi bi-calendar-check ms-2"></i>
+                        </button>
+                        <a href="{% url 'hospital:appointment_list' %}"
+                            class="btn btn-light border px-4 py-3 fw-bold rounded-4"
+                            data-confirm="Are you sure you want to cancel? Unsaved changes will be lost.">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .form-control,
+    .form-select {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 0.85rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background: #ffffff;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+</style>
+{% endblock %}

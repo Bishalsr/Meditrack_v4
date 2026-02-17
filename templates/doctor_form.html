@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Doctor | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-3 mb-5">
+                <a href="{% url 'hospital:doctor_list' %}" class="btn btn-light border btn-sm rounded-circle p-2"
+                    style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left text-primary fw-bold"></i>
+                </a>
+                <div>
+                    <h1 class="fw-black mb-1">{% if doctor %}Edit{% else %}Add{% endif %} <span
+                            class="text-primary">Doctor</span></h1>
+                    <p class="text-muted mb-0">
+                        {% if doctor %}
+                        Update details for Dr. {{ doctor.last_name }}.
+                        {% else %}
+                        Add a new doctor profile.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="medical-card p-5 border-0 shadow-lg">
+                <form method="post" class="needs-validation">
+                    {% csrf_token %}
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">First
+                                Name</label>
+                            <input type="text" name="first_name" class="form-control"
+                                value="{{ doctor.first_name|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Last
+                                Name</label>
+                            <input type="text" name="last_name" class="form-control"
+                                value="{{ doctor.last_name|default:'' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Specialization</label>
+                            <select name="specialization" class="form-select" required>
+                                <option value="" disabled {% if not doctor %}selected{% endif %}>Select specialization...
+                                </option>
+                                {% for value, label in specializations %}
+                                <option value="{{ value }}" {% if doctor and doctor.specialization == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Room
+                                Number</label>
+                            <input type="text" name="room_number" class="form-control"
+                                value="{{ doctor.room_number|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ doctor.email|default:'' }}"
+                                {% if doctor %}readonly{% endif %} required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Phone</label>
+                            <input type="text" name="phone" class="form-control" value="{{ doctor.phone|default:'' }}"
+                                required>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-top d-flex gap-3">
+                        <button type="submit" class="btn btn-primary px-5 py-3 fw-bold flex-grow-1 fs-5">
+                            Save Doctor <i class="bi bi-person-check ms-2"></i>
+                        </button>
+                        <a href="{% url 'hospital:doctor_list' %}"
+                            class="btn btn-light border px-4 py-3 fw-bold rounded-4"
+                            data-confirm="Are you sure you want to cancel? Unsaved changes will be lost.">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .form-control,
+    .form-select {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 0.85rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background: #ffffff;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+</style>
+{% endblock %}

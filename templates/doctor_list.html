@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctor List | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap g-3">
+        <div>
+            <h1 class="fw-black mb-1">Doctor <span class="text-primary">List</span></h1>
+            <p class="text-muted fs-5 mb-0">All registered doctors.</p>
+        </div>
+        <div>
+            {% if user.is_superuser or user.is_receptionist %}
+            <a href="{% url 'hospital:add_doctor' %}" class="btn btn-primary">Add Doctor</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="medical-card border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted x-small text-uppercase fw-bold">Doctor ID</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Name</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Specialization</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Office</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Contact</th>
+                        <th class="pe-4 py-3 text-muted x-small text-uppercase fw-bold text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doctor in doctors %}
+                    <tr>
+                        <td class="ps-4 py-3 fw-bold text-dark">DOC-{{ doctor.pk }}</td>
+                        <td class="py-3 fw-semibold text-dark">Dr. {{ doctor.first_name }} {{ doctor.last_name }}</td>
+                        <td class="py-3 text-muted">{{ doctor.get_specialization_display|default_if_none:"Not set"|default:"Not set" }}</td>
+                        <td class="py-3 text-muted">{{ doctor.room_number|default:"N/A" }}</td>
+                        <td class="py-3 text-muted">
+                            <div>{{ doctor.email }}</div>
+                            <div class="small">{{ doctor.phone|default:"Not available" }}</div>
+                        </td>
+                        <td class="pe-4 py-3 text-end">
+                            {% if user.is_superuser or user.is_receptionist %}
+                            <a href="{% url 'hospital:edit_doctor' doctor.pk %}" class="btn btn-sm btn-outline-secondary me-2">Edit</a>
+                            <a href="{% url 'hospital:delete_doctor' doctor.pk %}" class="btn btn-sm btn-outline-danger"
+                                data-confirm="Are you sure you want to delete this doctor?">Delete</a>
+                            {% else %}
+                            <span class="text-muted small">View only</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">No doctors found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}

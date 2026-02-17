@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load socialaccount %}
+
+{% block title %}{% trans "Sign In" %} | MediTrack{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg border-0 rounded-4" style="max-width: 500px; width: 100%;">
+        <div class="card-body p-5 text-center">
+            <div class="mb-4">
+                <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                    style="width: 80px; height: 80px;">
+                    <i class="bi bi-google text-warning" style="font-size: 2.5rem;"></i>
+                </div>
+                <h3 class="fw-bold text-primary mb-2">{% trans "Sign In with Google" %}</h3>
+                <p class="text-muted">
+                    {% blocktrans with provider.name as provider_name %}You are about to sign in using a third-party
+                    account from {{ provider_name }}.{% endblocktrans %}
+                </p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn btn-warning btn-lg rounded-3 py-3 fw-bold">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Continue" %}
+                    </button>
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-lg rounded-3 py-3"
+                        data-confirm="Are you sure you want to cancel Google sign in?">
+                        {% trans "Cancel" %}
+                    </a>
+                </div>
+            </form>
+
+            <div class="mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-shield-lock-fill me-1"></i>Secure sign in with Google
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

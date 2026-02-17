@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctor Dashboard | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5 align-items-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center gap-4">
+                <div class="icon-box-emerald" style="width: 80px; height: 80px; font-size: 2rem;">
+                    <i class="bi bi-hospital"></i>
+                </div>
+                <div>
+                    <h1 class="fw-black mb-1">Dr. <span class="text-primary">{{ doctor.last_name|default:user.email}}</span></h1>
+                    <p class="text-muted fs-5 mb-0">Manage your patients and upload medical files.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <span
+                class="badge bg-primary-light text-primary rounded-pill px-4 py-2 fw-bold text-uppercase letter-spacing-1">
+                Specialty: {{ doctor.get_specialization_display|default:"Doctor" }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Patient Table -->
+    <div class="row g-5">
+        <div class="col-lg-12">
+            <div class="medical-card overflow-hidden">
+                <div class="p-4 border-bottom bg-light d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold m-0 fs-5"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Patient List
+                    </h4>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-5 py-3 text-muted x-small text-uppercase fw-bold">Patient</th>
+                                <th class="py-3 text-muted x-small text-uppercase fw-bold">Details</th>
+                                <th class="py-3 text-muted x-small text-uppercase fw-bold">Status</th>
+                                <th class="pe-5 py-3 text-muted x-small text-uppercase fw-bold text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in patients %}
+                            <tr style="border-bottom: 1px solid #f3f4f6;">
+                                <td class="ps-5 py-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-primary-light text-primary"
+                                            style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-person fw-bold"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ patient.first_name }} {{ patient.last_name}}</div>
+                                            <div class="text-muted x-small">ID: MT-{{ patient.pk|add:1000 }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4">
+                                    <span class="small fw-bold text-secondary">{{ patient.get_gender_display }}</span>
+                                    <span class="text-muted mx-2">|</span>
+                                    <span class="small text-muted">{{ patient.age }} Yrs</span>
+                                </td>
+                                <td class="py-4">
+                                    <span class="small text-muted fw-medium"><i class="bi bi-clock me-2"></i>Active</span>
+                                </td>
+                                <td class="pe-5 py-4 text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="{% url 'hospital:doctor_patient_records' patient.id %}"
+                                            class="btn btn-sm btn-light border px-3 fw-bold rounded-pill">
+                                            <i class="bi bi-journal-medical me-1"></i> View Records
+                                        </a>
+                                        <a href="{% url 'hospital:upload_patient_file' patient.id %}"
+                                            class="btn btn-sm btn-primary px-3 fw-bold rounded-pill">
+                                            <i class="bi bi-cloud-arrow-up me-1"></i> Upload File
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted bg-light">
+                                    <i class="bi bi-person-slash display-4 d-block mb-3 opacity-25"></i>
+                                    No patients are currently assigned to you.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -2px;
+        color: #111827;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}

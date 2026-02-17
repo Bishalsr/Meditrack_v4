@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Medical Record | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="d-flex align-items-center gap-3 mb-5">
+                <a href="{% url 'hospital:medical_record_list' %}" class="btn btn-light border btn-sm rounded-circle p-2"
+                    style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left text-primary fw-bold"></i>
+                </a>
+                <div>
+                    <h1 class="fw-black mb-1">{{ action }} <span class="text-primary">Medical Record</span></h1>
+                    <p class="text-muted mb-0">Add or update diagnosis, prescriptions, test notes, and supporting files.</p>
+                </div>
+            </div>
+
+            <div class="medical-card p-5 border-0 shadow-lg">
+                <form method="post" enctype="multipart/form-data" class="needs-validation">
+                    {% csrf_token %}
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Patient</label>
+                            <select name="patient" class="form-select" required>
+                                <option value="" disabled {% if not record %}selected{% endif %}>Select patient...</option>
+                                {% for p in patients %}
+                                <option value="{{ p.pk }}" {% if record and record.patient.pk == p.pk %}selected{% endif %}>
+                                    {{ p.first_name }} {{ p.last_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Doctor</label>
+                            <select name="doctor" class="form-select">
+                                <option value="">Unassigned</option>
+                                {% for d in doctors %}
+                                <option value="{{ d.pk }}" {% if record and record.doctor and record.doctor.pk == d.pk %}selected{% endif %}>
+                                    Dr. {{ d.first_name }} {{ d.last_name }} ({{ d.get_specialization_display }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Diagnosis</label>
+                        <textarea name="diagnosis" class="form-control" rows="4" required>{{ record.diagnosis|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Prescriptions</label>
+                        <textarea name="prescriptions" class="form-control" rows="4" required>{{ record.prescriptions|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Tests</label>
+                        <textarea name="tests" class="form-control" rows="3">{{ record.tests|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">File Title (Optional)</label>
+                        <input type="text" name="file_title" class="form-control"
+                            placeholder="e.g., Chest X-ray, MRI Report, Lab PDF">
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Medical Files (Optional)</label>
+                        <input type="file" name="medical_files" class="form-control"
+                            accept=".pdf,.jpg,.jpeg,.png,.bmp,.webp,.tif,.tiff,.dcm" multiple>
+                        <div class="form-text mt-2">
+                            Upload X-ray images, scan photos, or PDF reports. You can select multiple files.
+                        </div>
+                    </div>
+
+                    {% if existing_files %}
+                    <div class="mb-5">
+                        <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">Existing Files</label>
+                        <div class="border rounded-4 bg-light p-3">
+                            {% for file in existing_files %}
+                            <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                <span class="small fw-bold text-dark">{{ file.title }}</span>
+                                <a href="{{ file.file.url }}" target="_blank" class="btn btn-sm btn-light border">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="pt-4 border-top d-flex gap-3">
+                        <button type="submit" class="btn btn-primary px-5 py-3 fw-bold flex-grow-1 fs-5">
+                            {% if record %}Update Record{% else %}Create Record{% endif %} <i class="bi bi-save ms-2"></i>
+                        </button>
+                        <a href="{% url 'hospital:medical_record_list' %}" class="btn btn-light border px-4 py-3 fw-bold rounded-4"
+                            data-confirm="Are you sure you want to cancel? Unsaved changes will be lost.">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .form-control,
+    .form-select {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 0.85rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background: #ffffff;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+</style>
+{% endblock %}

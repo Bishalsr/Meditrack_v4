@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment List | MediTrack{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-5 flex-wrap g-4">
+        <div>
+            <h1 class="fw-black mb-1">Appointment <span class="text-primary">List</span></h1>
+            <p class="text-muted fs-5 mb-0">View and manage all appointments.</p>
+        </div>
+        <div>
+            {% if user.is_superuser or user.is_receptionist %}
+            <a href="{% url 'hospital:add_appointment' %}"
+                class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <i class="bi bi-calendar-plus"></i> Add Appointment
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="medical-card p-3 mb-5 d-flex gap-4 align-items-center flex-wrap">
+        <div class="flex-grow-1">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0 text-muted ps-3"><i
+                        class="bi bi-search"></i></span>
+                <input type="text" class="form-control border-0 bg-transparent fw-medium"
+                    placeholder="Search by patient or doctor...">
+            </div>
+        </div>
+    </div>
+
+    <div class="medical-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-5 py-3 text-muted x-small text-uppercase fw-bold">Patient</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Doctor</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Date and Time</th>
+                        <th class="py-3 text-muted x-small text-uppercase fw-bold">Status</th>
+                        <th class="pe-5 py-3 text-muted x-small text-uppercase fw-bold text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments %}
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td class="ps-5 py-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fw-bold text-dark">{{ appt.patient.first_name }} {{ appt.patient.last_name}}</span>
+                            </div>
+                        </td>
+                        <td class="py-4">
+                            <span class="text-muted fw-medium">Dr. {{ appt.doctor.last_name }}</span>
+                        </td>
+                        <td class="py-4">
+                            <div class="fw-black text-dark small m-0">{{ appt.appointment_date|date:"F d, Y" }}</div>
+                            <div class="text-muted x-small fw-bold">{{ appt.appointment_date|date:"h:i A" }}</div>
+                        </td>
+                        <td class="py-4">
+                            <span class="badge rounded-pill px-3 py-2 
+                                {% if appt.status == 'Completed' %}bg-success bg-opacity-10 text-success
+                                {% elif appt.status == 'Pending' %}bg-warning bg-opacity-10 text-warning
+                                {% else %}bg-secondary bg-opacity-10 text-muted{% endif %} fw-bold x-small">
+                                <i class="bi bi-circle-fill me-2" style="font-size: 0.4rem;"></i>{{ appt.status }}
+                            </span>
+                        </td>
+                        <td class="pe-5 py-4 text-end">
+                            {% if user.is_superuser or user.is_receptionist %}
+                            <div class="btn-group gap-2">
+                                <a href="{% url 'hospital:edit_appointment' appt.pk %}"
+                                    class="btn btn-sm btn-light border p-2" title="Edit Appointment">
+                                    <i class="bi bi-pencil-fill text-primary"></i>
+                                </a>
+                                <a href="{% url 'hospital:delete_appointment' appt.pk %}"
+                                    class="btn btn-sm btn-light border p-2" title="Delete Appointment"
+                                    data-confirm="Are you sure you want to delete this appointment?">
+                                    <i class="bi bi-x-circle text-danger"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted bg-light">
+                            <i class="bi bi-calendar-x display-4 d-block mb-3 opacity-25"></i>
+                            No appointments found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black {
+        font-weight: 800;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}
