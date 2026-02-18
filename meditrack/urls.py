@@ -14,6 +14,8 @@ urlpatterns = [
 
     # Hospital app (landing page, dashboards, staff management)
     path('', include('hospital.urls', namespace='hospital')),
+    
+    path("medi_rag/", include("medi_rag.urls")),
 ]
 
 if settings.DEBUG:

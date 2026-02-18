@@ -18,6 +18,7 @@ from .models import (
     Receptionist,
 )
 from accounts.models import CustomUser  # for receptionist to manage users
+from medi_rag.models import ChatMessage
 
 
 def _can_manage_registry(user):
@@ -295,6 +296,40 @@ def doctor_dashboard(request):
         messages.error(request, "Access denied")
         return redirect(_redirect_for_logged_in_role(request.user))
 
+    if request.method == "POST" and "rag_question" in request.POST:
+        question = (request.POST.get("rag_question") or "").strip()
+        if not question:
+            messages.error(request, "Please enter a question for the medical assistant.")
+            return redirect("hospital:doctor_dashboard")
+
+        try:
+            from medi_rag.rag import ask_rag
+
+            answer = ask_rag(question)
+        except Exception:
+            answer = "I could not generate a response right now. Please try again shortly."
+            messages.error(request, "Medical assistant is currently unavailable.")
+
+        try:
+            ChatMessage.objects.create(
+                user=request.user,
+                question=question,
+                answer=answer,
+            )
+        except Exception:
+            messages.error(request, "Unable to save chat history.")
+
+        return redirect("hospital:doctor_dashboard")
+
+    try:
+        latest_chat_history = list(
+            ChatMessage.objects.filter(user=request.user)
+            .order_by("-created_at")[:8]
+        )
+        chat_history = reversed(latest_chat_history)
+    except Exception:
+        chat_history = []
+
     return render(
         request,
         'doctor_dashboard.html',
@@ -302,6 +337,7 @@ def doctor_dashboard(request):
             'appointments': appointments,
             'patients': patients,
             'doctor': doctor,
+            'chat_history': chat_history,
         },
     )
 

@@ -1,0 +1,16 @@
+C:.
+|-- .git\
+|-- accounts\
+|-- hospital\
+|-- medi_rag\
+|-- media\
+|-- meditrack\
+|-- templates\
+|-- venv\
+|-- .env
+|-- .gitignore
+|-- db.sqlite3
+|-- file.txt
+|-- manage.py
+|-- README.md
+|-- requirements.txt
