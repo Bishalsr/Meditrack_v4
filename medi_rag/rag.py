@@ -59,7 +59,7 @@ def setup_rag():
 
     os.makedirs(VECTORSTORE_PATH, exist_ok=True)
 
-    # Load saved vectorstore if valid; otherwise rebuild from documents.
+   
     if _has_valid_saved_index():
         try:
             vector_db = FAISS.load_local(

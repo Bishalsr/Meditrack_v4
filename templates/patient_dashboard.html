@@ -46,8 +46,7 @@
                         </div>
                         <div>
                             <h5 class="fw-bold mb-0">Dr. {{ appointment.doctor.first_name }} {{appointment.doctor.last_name }}</h5>
-                            <span class="text-muted small fw-medium">{{
-                                appointment.doctor.get_specialization_display|default:"Medical Specialist" }}</span>
+                            <span class="text-muted small fw-medium">{{appointment.doctor.get_specialization_display|default:"Medical Specialist" }}</span>
                         </div>
                     </div>
 

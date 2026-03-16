@@ -34,7 +34,7 @@ def signup_view(request):
             messages.error(request, "Email already registered")
             return redirect("accounts:signup")
 
-        # Keep local signup usable without separate approval workflow.
+        
         CustomUser.objects.create_user(
             email=email,
             password=password,
@@ -98,12 +98,16 @@ def logout_view(request):
 # FORGOT PASSWORD
 def forgot_password_view(request):
     if request.method == "POST":
-        email = request.POST.get("email")
+        email = (request.POST.get("email") or "").strip().lower()
+        if not email:
+            messages.error(request, "Email is required")
+            return redirect("accounts:forgot_password")
+
         user = CustomUser.objects.filter(email=email).first()
 
         if not user:
             messages.error(request, "Email not found")
-            return redirect("accounts:login")
+            return redirect("accounts:forgot_password")
 
         # Delete previous tokens
         PasswordResetRequest.objects.filter(user=user).delete()
@@ -115,7 +119,7 @@ def forgot_password_view(request):
         messages.success(request, "Password reset link sent to your email")
         return redirect("accounts:login")
 
-    return render(request, "login.html")
+    return render(request, "forgot_password.html")
 
 
 # RESET PASSWORD
@@ -127,8 +131,12 @@ def reset_password_view(request, token):
         return redirect("accounts:login")
 
     if request.method == "POST":
-        new_password = request.POST.get("new_password")
-        confirm_password = request.POST.get("confirm_password")
+        new_password = request.POST.get("new_password") or ""
+        confirm_password = request.POST.get("confirm_password") or ""
+
+        if not new_password or not confirm_password:
+            messages.error(request, "Both password fields are required")
+            return redirect(request.path)
 
         if new_password != confirm_password:
             messages.error(request, "Passwords do not match")
