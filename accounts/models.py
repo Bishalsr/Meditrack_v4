@@ -81,7 +81,10 @@ class PasswordResetRequest(models.Model):
         return timezone.now() <= self.created_at + self.TOKEN_VALIDITY_PERIOD
 
     def send_reset_email(self):
-        reset_link = f"http://localhost:8000/auth/reset-password/{self.token}/"
+        base_url = getattr(settings, "SITE_URL", "").rstrip("/")
+        if not base_url:
+            base_url = "http://127.0.0.1:8000"
+        reset_link = f"{base_url}/auth/reset-password/{self.token}/"
         send_mail(
             "Password Reset Request",
             f"Click the link to reset your password:\n{reset_link}",

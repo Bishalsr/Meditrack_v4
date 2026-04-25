@@ -1,10 +1,21 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib import messages
-from django.utils.crypto import get_random_string
 from django.conf import settings
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .models import CustomUser, PasswordResetRequest
+
+
+def _validate_password_or_redirect(password, *, request):
+    try:
+        validate_password(password)
+    except ValidationError as exc:
+        for message in exc.messages:
+            messages.error(request, message)
+        return False
+    return True
 
 # Landing page for all users
 def index(request):
@@ -32,8 +43,7 @@ def signup_view(request):
             messages.error(request, "Passwords do not match")
             return redirect("accounts:signup")
 
-        if len(password) < 6:
-            messages.error(request, "Password must be at least 6 characters")
+        if not _validate_password_or_redirect(password, request=request):
             return redirect("accounts:signup")
 
         if CustomUser.objects.filter(email=email).exists():
@@ -130,17 +140,10 @@ def forgot_password_view(request):
             return redirect("accounts:forgot_password")
 
         user = CustomUser.objects.filter(email=email).first()
-
-        if not user:
-            messages.error(request, "Email not found")
-            return redirect("accounts:forgot_password")
-
-        # Delete previous tokens
-        PasswordResetRequest.objects.filter(user=user).delete()
-
-        # Create new reset token
-        reset_request = PasswordResetRequest.objects.create(user=user)
-        reset_request.send_reset_email()
+        if user:
+            PasswordResetRequest.objects.filter(user=user).delete()
+            reset_request = PasswordResetRequest.objects.create(user=user)
+            reset_request.send_reset_email()
 
         messages.success(request, "Password reset link sent to your email")
         return redirect("accounts:login")
@@ -168,8 +171,7 @@ def reset_password_view(request, token):
             messages.error(request, "Passwords do not match")
             return redirect(request.path)
 
-        if len(new_password) < 6:
-            messages.error(request, "Password must be at least 6 characters")
+        if not _validate_password_or_redirect(new_password, request=request):
             return redirect(request.path)
 
         user = reset_request.user
