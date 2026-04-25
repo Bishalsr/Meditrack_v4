@@ -29,7 +29,7 @@
     <div class="row g-4 mb-5">
         <div class="col-md-4">
             <div class="medical-card p-4 text-center">
-                <div class="h3 fw-black mb-1 text-primary">{{ patients|length }}</div>
+                <div class="h3 fw-black mb-1 text-primary">{{ total_patients }}</div>
                 <div class="text-muted small fw-bold text-uppercase letter-spacing-1">Total Patients</div>
             </div>
         </div>
@@ -90,6 +90,8 @@
             </table>
         </div>
     </div>
+
+    {% include "partials/pagination.html" %}
 </div>
 
 <style>

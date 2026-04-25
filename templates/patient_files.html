@@ -9,12 +9,7 @@
             <h1 class="fw-black mb-1">Medical <span class="text-primary">Files</span></h1>
             <p class="text-muted fs-5 mb-0">Your uploaded medical reports and documents.</p>
         </div>
-        <div class="text-end">
-            <span
-                class="badge bg-primary-light text-primary border border-primary border-opacity-10 px-4 py-2 rounded-pill fw-bold">
-                <i class="bi bi-lock-fill me-2"></i>Secure Access
-            </span>
-        </div>
+       
     </div>
 
     <div class="row g-4">
@@ -34,7 +29,7 @@
 
                 <div class="mb-4 small text-muted p-3 bg-light rounded-4 border flex-grow-1">
                     <div class="d-flex justify-content-between mb-1">
-                        <span class="fw-bold">Lead Clinician</span>
+                        <span class="fw-bold">Doctor</span>
                         <span class="text-dark">
                             {% if file.doctor %}
                             Dr. {{ file.doctor.last_name }}

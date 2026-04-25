@@ -1,11 +1,14 @@
 import os
 
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 from .models import (
     Appointment,
@@ -18,7 +21,6 @@ from .models import (
     Receptionist,
 )
 from accounts.models import CustomUser  # for receptionist to manage users
-from medi_rag.models import ChatMessage
 
 
 def _can_manage_registry(user):
@@ -36,6 +38,21 @@ def _name_parts_from_email(email, fallback_last_name):
     first_name = parts[0].title() if parts else "User"
     last_name = parts[1].title() if len(parts) > 1 else fallback_last_name
     return first_name, last_name
+
+
+def _paginate_queryset(request, queryset, per_page=10, window=2):
+    paginator = Paginator(queryset, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    current = page_obj.number
+    total_pages = paginator.num_pages
+    start = max(current - window, 1)
+    end = min(current + window, total_pages)
+
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    querystring = query_params.urlencode()
+
+    return page_obj, paginator, querystring, range(start, end + 1), start, end, total_pages
 
 
 def _generate_unique_phone(model_cls, prefix, user_id):
@@ -78,16 +95,25 @@ def _assign_role_to_user(user, role):
                 raise ValueError("This patient profile is already linked to another user.")
 
             if not patient:
-                first_name, last_name = _name_parts_from_email(user.email, "Patient")
+                phone = (user.phone or "").strip() or None
+                if phone and Patient.objects.filter(phone=phone).exists():
+                    phone = None
+
+                first_name = user.first_name or _name_parts_from_email(user.email, "Patient")[0]
+                last_name = user.last_name or "Patient"
+                age = user.age if user.age is not None else 0
+                gender = user.gender if user.gender else "O"
+                address = user.address or "To be updated"
+
                 patient = Patient.objects.create(
                     user=user,
                     first_name=first_name,
                     last_name=last_name,
-                    age=0,
-                    gender="O",
-                    phone=None,
+                    age=age,
+                    gender=gender,
+                    phone=phone,
                     email=user.email,
-                    address="To be updated",
+                    address=address,
                 )
             else:
                 patient.user = user
@@ -102,13 +128,19 @@ def _assign_role_to_user(user, role):
                 raise ValueError("This doctor profile is already linked to another user.")
 
             if not doctor:
-                first_name, last_name = _name_parts_from_email(user.email, "Doctor")
+                phone = (user.phone or "").strip()
+                if not phone or Doctor.objects.filter(phone=phone).exists():
+                    phone = _generate_unique_phone(Doctor, "DOC", user.id)
+
+                first_name = user.first_name or _name_parts_from_email(user.email, "Doctor")[0]
+                last_name = user.last_name or "Doctor"
+
                 doctor = Doctor.objects.create(
                     user=user,
                     first_name=first_name,
                     last_name=last_name,
                     specialization="General",
-                    phone=_generate_unique_phone(Doctor, "DOC", user.id),
+                    phone=phone,
                     email=user.email,
                 )
             else:
@@ -154,6 +186,15 @@ def _redirect_for_logged_in_role(user):
     return "hospital:landing_page"
 
 
+def _get_appointment_patient_queryset():
+    """
+    Keep the patient selector focused on true patient profiles by hiding any
+    records whose email also belongs to a doctor profile.
+    """
+    doctor_emails = Doctor.objects.values_list("email", flat=True)
+    return Patient.objects.exclude(email__in=doctor_emails).order_by("first_name", "last_name")
+
+
 ALLOWED_MEDICAL_FILE_EXTENSIONS = {
     ".pdf",
     ".jpg",
@@ -174,6 +215,145 @@ def _validate_medical_files(uploaded_files):
         if extension not in ALLOWED_MEDICAL_FILE_EXTENSIONS:
             invalid_names.append(uploaded_file.name)
     return invalid_names
+
+
+def _pdf_escape(text):
+    return (
+        (text or "")
+        .replace("\\", "\\\\")
+        .replace("(", "\\(")
+        .replace(")", "\\)")
+    )
+
+
+def _wrap_text(text, width=88):
+    words = (text or "").split()
+    if not words:
+        return [""]
+    lines = []
+    current = words[0]
+    for word in words[1:]:
+        if len(current) + 1 + len(word) <= width:
+            current = f"{current} {word}"
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _render_simple_pdf(lines, title="MediTrack Doctor Directory"):
+    content_lines = []
+    line_gap = 16
+    bottom_margin = 72
+    max_lines = int((760 - bottom_margin) / line_gap)
+
+    content_lines.append("BT")
+    content_lines.append("/F1 12 Tf")
+    content_lines.append("72 760 Td")
+
+    if title:
+        content_lines.append(f"({_pdf_escape(title)}) Tj")
+        content_lines.append(f"0 {-line_gap - 4} Td")
+        max_lines -= 2
+
+    remaining = max_lines
+    for line in lines:
+        wrapped = _wrap_text(line, width=92)
+        for part in wrapped:
+            if remaining <= 0:
+                break
+            content_lines.append(f"({_pdf_escape(part)}) Tj")
+            content_lines.append(f"0 {-line_gap} Td")
+            remaining -= 1
+        if remaining <= 0:
+            break
+
+    content_lines.append("ET")
+    content_stream = "\n".join(content_lines).encode("latin-1", errors="replace")
+
+    objects = []
+    objects.append(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+    objects.append(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
+    objects.append(
+        b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> >>\nendobj\n"
+    )
+    objects.append(
+        b"4 0 obj\n<< /Length " + str(len(content_stream)).encode("ascii") + b" >>\nstream\n"
+        + content_stream
+        + b"\nendstream\nendobj\n"
+    )
+    objects.append(b"5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
+
+    pdf = [b"%PDF-1.4\n"]
+    offsets = []
+    for obj in objects:
+        offsets.append(sum(len(chunk) for chunk in pdf))
+        pdf.append(obj)
+
+    xref_offset = sum(len(chunk) for chunk in pdf)
+    pdf.append(b"xref\n0 6\n0000000000 65535 f \n")
+    for offset in offsets:
+        pdf.append(f"{offset:010d} 00000 n \n".encode("ascii"))
+    pdf.append(b"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n")
+    pdf.append(f"{xref_offset}\n".encode("ascii"))
+    pdf.append(b"%%EOF\n")
+    return b"".join(pdf)
+
+
+def _parse_iso_datetime(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if timezone.is_naive(parsed):
+        return timezone.make_aware(parsed, timezone.get_current_timezone())
+    return parsed
+
+
+def _clear_rag_session(request):
+    request.session.pop("rag_answer", None)
+    request.session.pop("rag_question", None)
+    request.session.pop("rag_error", None)
+    request.session.pop("rag_created_at", None)
+
+
+def _store_rag_session(request, *, question, answer, error):
+    if answer:
+        request.session["rag_answer"] = answer
+        request.session["rag_question"] = question
+        request.session["rag_created_at"] = timezone.now().isoformat()
+        request.session.pop("rag_error", None)
+    else:
+        request.session["rag_error"] = error or "Please enter the patient diseases or symptoms."
+        request.session["rag_question"] = question
+        request.session.pop("rag_answer", None)
+        request.session.pop("rag_created_at", None)
+
+
+def _read_rag_session(request):
+    rag_answer = request.session.get("rag_answer")
+    rag_question = request.session.get("rag_question", "")
+    rag_error = request.session.pop("rag_error", None)
+    rag_created_at = request.session.get("rag_created_at")
+
+    created_dt = _parse_iso_datetime(rag_created_at)
+    if created_dt:
+        if timezone.now() - created_dt > timedelta(seconds=20):
+            _clear_rag_session(request)
+            rag_answer = None
+            rag_question = ""
+            rag_created_at = None
+    elif rag_answer:
+        _clear_rag_session(request)
+        rag_answer = None
+        rag_question = ""
+        rag_created_at = None
+
+    return rag_question, rag_answer, rag_error, rag_created_at
 
 
 def _save_medical_files(*, patient, doctor, medical_record, uploaded_files, base_title):
@@ -203,7 +383,39 @@ def landing_page(request):
             return redirect('hospital:patient_dashboard')
         elif request.user.is_staff or request.user.is_superuser:
             return redirect('hospital:home')
-    
+
+    if request.method == "POST" and "disease_query" in request.POST:
+        rag_question = (request.POST.get("disease_query") or "").strip()
+        if not rag_question:
+            _store_rag_session(
+                request,
+                question=rag_question,
+                answer=None,
+                error="Please enter the patient diseases or symptoms.",
+            )
+        else:
+            try:
+                from medi_rag.rag import recommend_doctor
+
+                rag_answer = recommend_doctor(rag_question)
+                _store_rag_session(
+                    request,
+                    question=rag_question,
+                    answer=rag_answer,
+                    error=None,
+                )
+            except Exception:
+                _store_rag_session(
+                    request,
+                    question=rag_question,
+                    answer=None,
+                    error="Doctor recommendation assistant is currently unavailable. Please try again later.",
+                )
+
+        return redirect("hospital:landing_page")
+
+    rag_question, rag_answer, rag_error, rag_created_at = _read_rag_session(request)
+
     context = {
         'hospital_name': 'MediTrack Medical Center',
         'hospital_info': 'Providing state-of-the-art healthcare services with a focus on patient well-being and advanced medical coordination.',
@@ -214,7 +426,11 @@ def landing_page(request):
             'Radiology',
             'Pathology',
             'Emergency Care'
-        ]
+        ],
+        'rag_question': rag_question,
+        'rag_answer': rag_answer,
+        'rag_error': rag_error,
+        'rag_created_at': rag_created_at,
     }
     return render(request, 'landing_page.html', context)
 
@@ -259,19 +475,62 @@ def home(request):
 # Patient dashboard
 @login_required
 def patient_dashboard(request):
+    if request.method == "POST" and "disease_query" in request.POST:
+        rag_question = (request.POST.get("disease_query") or "").strip()
+        if not rag_question:
+            _store_rag_session(
+                request,
+                question=rag_question,
+                answer=None,
+                error="Please enter the patient diseases or symptoms.",
+            )
+        else:
+            try:
+                from medi_rag.rag import recommend_doctor
+
+                rag_answer = recommend_doctor(rag_question)
+                _store_rag_session(
+                    request,
+                    question=rag_question,
+                    answer=rag_answer,
+                    error=None,
+                )
+            except Exception:
+                _store_rag_session(
+                    request,
+                    question=rag_question,
+                    answer=None,
+                    error="Doctor recommendation assistant is currently unavailable. Please try again later.",
+                )
+
+        return redirect("hospital:patient_dashboard")
+
     try:
         patient = Patient.objects.get(user=request.user)
         appointments = Appointment.objects.filter(patient=patient)
         files = PatientFile.objects.filter(patient=patient).order_by('-uploaded_at')
+        doctor_notes = (
+            DoctorPrescriptionNote.objects.filter(patient=patient)
+            .select_related("doctor")
+            .order_by("-created_at")
+        )
     except Patient.DoesNotExist:
         patient = None
         appointments = []
         files = []
+        doctor_notes = []
+
+    rag_question, rag_answer, rag_error, rag_created_at = _read_rag_session(request)
 
     context = {
         'patient': patient,
         'appointments': appointments,
-        'files': files
+        'files': files,
+        'doctor_notes': doctor_notes,
+        'rag_question': rag_question,
+        'rag_answer': rag_answer,
+        'rag_error': rag_error,
+        'rag_created_at': rag_created_at,
     }
 
     return render(request, 'patient_dashboard.html', context)
@@ -296,40 +555,6 @@ def doctor_dashboard(request):
         messages.error(request, "Access denied")
         return redirect(_redirect_for_logged_in_role(request.user))
 
-    if request.method == "POST" and "rag_question" in request.POST:
-        question = (request.POST.get("rag_question") or "").strip()
-        if not question:
-            messages.error(request, "Please enter a question for the medical assistant.")
-            return redirect("hospital:doctor_dashboard")
-
-        try:
-            from medi_rag.rag import ask_rag
-
-            answer = ask_rag(question)
-        except Exception:
-            answer = "I could not generate a response right now. Please try again shortly."
-            messages.error(request, "Medical assistant is currently unavailable.")
-
-        try:
-            ChatMessage.objects.create(
-                user=request.user,
-                question=question,
-                answer=answer,
-            )
-        except Exception:
-            messages.error(request, "Unable to save chat history.")
-
-        return redirect("hospital:doctor_dashboard")
-
-    try:
-        latest_chat_history = list(
-            ChatMessage.objects.filter(user=request.user)
-            .order_by("-created_at")[:8]
-        )
-        chat_history = reversed(latest_chat_history)
-    except Exception:
-        chat_history = []
-
     return render(
         request,
         'doctor_dashboard.html',
@@ -337,7 +562,6 @@ def doctor_dashboard(request):
             'appointments': appointments,
             'patients': patients,
             'doctor': doctor,
-            'chat_history': chat_history,
         },
     )
 
@@ -417,9 +641,10 @@ def receptionist_dashboard(request):
         return redirect('hospital:landing_page')
 
     users = CustomUser.objects.all()
-    patients = Patient.objects.all()
+    doctor_emails = Doctor.objects.values_list("email", flat=True)
+    patients = Patient.objects.exclude(email__in=doctor_emails)
     doctors = Doctor.objects.all()
-    recent_patients = Patient.objects.order_by('-date_registered')[:5]
+    recent_patients = Patient.objects.exclude(email__in=doctor_emails).order_by('-date_registered')[:5]
     recent_records = MedicalRecord.objects.select_related("patient", "doctor").order_by("-record_date")[:5]
 
     context = {
@@ -430,6 +655,27 @@ def receptionist_dashboard(request):
         'recent_records': recent_records,
     }
     return render(request, 'receptionist_dashboard.html', context)
+
+
+@login_required
+def download_doctors_pdf(request):
+    if not _can_manage_registry(request.user):
+        messages.error(request, "Permission denied")
+        return redirect("hospital:home")
+
+    doctors = Doctor.objects.order_by("last_name", "first_name")
+    lines = []
+    if not doctors:
+        lines.append("No doctors found.")
+    else:
+        for index, doctor in enumerate(doctors, start=1):
+            label = f"{index}. Dr. {doctor.first_name} {doctor.last_name} - {doctor.get_specialization_display()}"
+            lines.append(label)
+
+    pdf_bytes = _render_simple_pdf(lines)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="doctor_specializations.pdf"'
+    return response
 
 
 @login_required
@@ -551,22 +797,62 @@ def download_patient_file(request, file_id):
 @login_required
 def patient_list(request):
     user = request.user
-    if user.is_superuser or user.is_staff or hasattr(user, "receptionist"):
-        patients = Patient.objects.all()
+    if user.is_superuser or hasattr(user, "receptionist"):
+        patients = _get_appointment_patient_queryset()
     else:
         return redirect('hospital:patient_dashboard')
-    
-    return render(request, 'patient_list.html', {'patients': patients})
+
+    page_obj, paginator, querystring, page_window, page_start, page_end, page_total = _paginate_queryset(
+        request,
+        patients,
+        per_page=10,
+    )
+
+    return render(
+        request,
+        'patient_list.html',
+        {
+            'patients': page_obj,
+            'page_obj': page_obj,
+            'paginator': paginator,
+            'querystring': querystring,
+            'page_window': page_window,
+            'page_start': page_start,
+            'page_end': page_end,
+            'page_total': page_total,
+            'total_patients': paginator.count,
+        },
+    )
 
 @login_required
 def doctor_list(request):
     user = request.user
-    if user.is_superuser or user.is_staff or hasattr(user, "receptionist"):
-        doctors = Doctor.objects.all()
+    if user.is_superuser or hasattr(user, "receptionist"):
+        doctors = Doctor.objects.order_by("first_name", "last_name")
     else:
         return redirect('hospital:patient_dashboard')
-    
-    return render(request, 'doctor_list.html', {'doctors': doctors})
+
+    page_obj, paginator, querystring, page_window, page_start, page_end, page_total = _paginate_queryset(
+        request,
+        doctors,
+        per_page=10,
+    )
+
+    return render(
+        request,
+        'doctor_list.html',
+        {
+            'doctors': page_obj,
+            'page_obj': page_obj,
+            'paginator': paginator,
+            'querystring': querystring,
+            'page_window': page_window,
+            'page_start': page_start,
+            'page_end': page_end,
+            'page_total': page_total,
+            'total_doctors': paginator.count,
+        },
+    )
 
 
 @login_required
@@ -580,13 +866,24 @@ def appointment_list(request):
             doctor = Doctor.objects.get(user=user)
             appointments = Appointment.objects.filter(doctor=doctor)
         except Doctor.DoesNotExist:
-            appointments = []
+            appointments = Appointment.objects.none()
     else:
         try:
             patient = Patient.objects.get(user=user)
             appointments = Appointment.objects.filter(patient=patient)
         except Patient.DoesNotExist:
-            appointments = []
+            appointments = Appointment.objects.none()
+
+    query = (request.GET.get("q") or "").strip()
+    if query:
+        appointments = appointments.filter(
+            Q(patient__first_name__icontains=query)
+            | Q(patient__last_name__icontains=query)
+            | Q(doctor__first_name__icontains=query)
+            | Q(doctor__last_name__icontains=query)
+            | Q(patient__email__icontains=query)
+            | Q(doctor__email__icontains=query)
+        )
 
     return render(request, 'appointment_list.html', {'appointments': appointments})
 
@@ -606,9 +903,26 @@ def add_patient(request):
         gender = request.POST.get('gender')
         address = request.POST.get('address')
         
-        if Patient.objects.filter(email=email).exists():
-            messages.error(request, "Patient with this email already exists")
-            return redirect('hospital:add_patient')
+        existing_patient = Patient.objects.filter(email=email).first()
+        if existing_patient:
+            if phone and Patient.objects.filter(phone=phone).exclude(pk=existing_patient.pk).exists():
+                messages.error(request, "Patient with this phone already exists")
+                return redirect('hospital:add_patient')
+
+            existing_patient.first_name = first_name
+            existing_patient.last_name = last_name
+            existing_patient.phone = phone
+            existing_patient.age = age
+            existing_patient.gender = gender
+            existing_patient.address = address
+
+            linked_user = CustomUser.objects.filter(email__iexact=email).first()
+            if linked_user and existing_patient.user_id != linked_user.id:
+                existing_patient.user = linked_user
+
+            existing_patient.save()
+            messages.success(request, "Patient details updated successfully")
+            return redirect('hospital:patient_list')
 
         Patient.objects.create(
             first_name=first_name,
@@ -617,7 +931,7 @@ def add_patient(request):
             phone=phone,
             age=age,
             gender=gender,
-            address=address
+            address=address,
         )
         messages.success(request, "Patient added successfully")
         return redirect('hospital:patient_list')
@@ -680,9 +994,31 @@ def add_doctor(request):
             messages.error(request, "Please choose a valid specialization.")
             return redirect('hospital:add_doctor')
 
-        if Doctor.objects.filter(email=email).exists():
-            messages.error(request, "Doctor with this email already exists")
-            return redirect('hospital:add_doctor')
+        existing_doctor = Doctor.objects.filter(email=email).first()
+        if existing_doctor:
+            if Doctor.objects.filter(phone=phone).exclude(pk=existing_doctor.pk).exists():
+                messages.error(request, "Doctor with this phone already exists")
+                return redirect('hospital:add_doctor')
+
+            existing_doctor.first_name = first_name
+            existing_doctor.last_name = last_name
+            existing_doctor.phone = phone
+            existing_doctor.specialization = specialization
+            existing_doctor.room_number = room_number or None
+
+            linked_user = CustomUser.objects.filter(email__iexact=email).first()
+            if linked_user and existing_doctor.user_id != linked_user.id:
+                existing_doctor.user = linked_user
+
+            try:
+                existing_doctor.save()
+            except IntegrityError:
+                messages.error(request, "Unable to update doctor due to invalid or duplicate data.")
+                return redirect('hospital:add_doctor')
+
+            messages.success(request, "Doctor details updated successfully")
+            return redirect('hospital:doctor_list')
+
         if Doctor.objects.filter(phone=phone).exists():
             messages.error(request, "Doctor with this phone already exists")
             return redirect('hospital:add_doctor')
@@ -940,8 +1276,8 @@ def add_appointment(request):
         messages.success(request, "Appointment recorded successfully")
         return redirect('hospital:appointment_list')
     
-    patients = Patient.objects.all()
-    doctors = Doctor.objects.all()
+    patients = _get_appointment_patient_queryset()
+    doctors = Doctor.objects.order_by("first_name", "last_name")
     context = {
         'patients': patients,
         'doctors': doctors,

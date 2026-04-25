@@ -120,6 +120,52 @@
     border-color: var(--primary);
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
   }
+
+  .rag-section {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .rag-card {
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: 0 10px 22px -20px rgba(15, 23, 42, 0.32);
+  }
+
+  .rag-answer {
+    background: #f8fbff;
+    border: 1px dashed #cbd5f5;
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    color: #0f172a;
+    font-size: 0.95rem;
+  }
+
+  .rag-compact .section-title {
+    font-size: clamp(1.35rem, 2vw, 1.7rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .rag-compact .lead-copy {
+    font-size: 0.95rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .rag-compact .sub-copy {
+    font-size: 0.8rem;
+  }
+
+  .rag-compact .form-control {
+    padding: 0.65rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .rag-compact .rag-card {
+    max-width: 640px;
+    margin-left: auto;
+  }
 </style>
 
 <!-- Hero Section -->
@@ -137,12 +183,74 @@
         </p>
         <div class="d-flex justify-content-center gap-4">
           <a href="{% url 'accounts:signup' %}" class="btn btn-primary btn-lg px-5 py-3">Create Account</a>
-          <a href="#services" class="btn btn-outline-emerald btn-lg px-5 py-3">View Services</a>
+          <a href="#doctor-recommend" class="btn btn-outline-emerald btn-lg px-5 py-3">Find a Doctor</a>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+<!-- Doctor Recommendation RAG -->
+<section id="doctor-recommend" class="rag-section py-3 rag-compact">
+  <div class="container py-3">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-5">
+        <h2 class="section-title">Find the Right <span class="text-primary">Doctor</span></h2>
+        <p class="text-muted lead-copy">
+          Enter the patient’s diseases or symptoms, and we will recommend the right doctor specialization.
+        </p>
+        <p class="text-muted sub-copy mb-0">
+          This is a guidance tool, not a diagnosis. If symptoms are severe or urgent, seek emergency care.
+        </p>
+      </div>
+      <div class="col-lg-7">
+        <div class="rag-card p-3">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-muted text-uppercase letter-spacing-1">
+                Patient Diseases / Symptoms
+              </label>
+              <textarea name="disease_query" class="form-control" rows="3"
+                placeholder="e.g., chest pain, shortness of breath, dizziness...">{{ rag_question|default:'' }}</textarea>
+            </div>
+            {% if rag_error %}
+            <div class="alert alert-warning mb-2">{{ rag_error }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+              Ask RAG for Recommendations
+            </button>
+          </form>
+
+          {% if rag_answer %}
+          <div id="ragRecommendation" class="rag-answer mt-3" data-created-at="{{ rag_created_at|default:'' }}">
+            <div class="small text-uppercase fw-bold text-muted mb-2">Recommendations</div>
+            <div class="fw-medium">{{ rag_answer|linebreaksbr }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const block = document.getElementById("ragRecommendation");
+    if (!block) return;
+    const createdAt = block.getAttribute("data-created-at");
+    const createdMs = createdAt ? Date.parse(createdAt) : NaN;
+    if (Number.isNaN(createdMs)) return;
+    const elapsed = Date.now() - createdMs;
+    const remaining = 20000 - elapsed;
+    const removeBlock = () => block.remove();
+    if (remaining <= 0) {
+      removeBlock();
+    } else {
+      setTimeout(removeBlock, remaining);
+    }
+  })();
+</script>
 
 <!-- Features Grid -->
 <section id="services" class="py-5 bg-white border-top">

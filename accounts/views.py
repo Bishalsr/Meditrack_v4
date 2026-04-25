@@ -14,11 +14,17 @@ def index(request):
 # Signup page
 def signup_view(request):
     if request.method == "POST":
+        first_name = (request.POST.get("first_name") or "").strip()
+        last_name = (request.POST.get("last_name") or "").strip()
         email = (request.POST.get("email") or "").strip().lower()
+        phone = (request.POST.get("phone") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        age_raw = (request.POST.get("age") or "").strip()
+        gender = (request.POST.get("gender") or "").strip().upper()
         password = request.POST.get("password")
         confirm_password = request.POST.get("confirm_password") or request.POST.get("password2")
 
-        if not email or not password or not confirm_password:
+        if not all([first_name, last_name, email, password, confirm_password]):
             messages.error(request, "All fields are required")
             return redirect("accounts:signup")
 
@@ -34,11 +40,31 @@ def signup_view(request):
             messages.error(request, "Email already registered")
             return redirect("accounts:signup")
 
+        age = None
+        if age_raw:
+            try:
+                age = int(age_raw)
+                if age <= 0:
+                    raise ValueError
+            except ValueError:
+                messages.error(request, "Please enter a valid age")
+                return redirect("accounts:signup")
+
+        if gender and gender not in {"M", "F", "O"}:
+            messages.error(request, "Please choose a valid gender")
+            return redirect("accounts:signup")
+
         
         CustomUser.objects.create_user(
             email=email,
             password=password,
             is_authorized=True,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            address=address,
+            age=age,
+            gender=gender,
         )
 
         messages.success(request, "Signup successful. Please login.")

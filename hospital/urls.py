@@ -13,6 +13,7 @@ urlpatterns = [
     path("doctor-dashboard/", views.doctor_dashboard, name="doctor_dashboard"),
     path("doctor/patients/<int:patient_id>/records/", views.doctor_patient_records, name="doctor_patient_records"),
     path("receptionist-dashboard/", views.receptionist_dashboard, name="receptionist_dashboard"),
+    path("doctors/export/pdf/", views.download_doctors_pdf, name="download_doctors_pdf"),
     path("user-role-assignment/", views.user_role_assignment, name="user_role_assignment"),
 
     # Lists

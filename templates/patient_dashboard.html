@@ -8,7 +8,7 @@
         <div class="col-lg-8">
             <div class="d-flex align-items-center gap-4">
                 <div class="icon-box-emerald" style="width: 80px; height: 80px; font-size: 2rem;">
-                    <i class="bi bi-shield-check"></i>
+                    <i class="bi bi-person"></i>
                 </div>
                 <div>
                     <h1 class="fw-black mb-1">Hi, <span class="text-primary">{{patient.first_name|default:"Patient" }}</span></h1>
@@ -21,10 +21,44 @@
                 <div class="px-4 py-2 rounded-pill bg-primary-light text-primary fw-bold small">
                     {{ appointments|length }} Appointments
                 </div>
+                <div class="px-4 py-2 rounded-pill bg-success-subtle text-success fw-bold small">
+                    {{ doctor_notes|length }} Notes
+                </div>
                 <div class="px-4 py-2 rounded-pill bg-light text-muted fw-bold small">
                     {{ files|length }} Reports
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Doctor Recommendation -->
+    <div class="mb-5 pb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h3 class="fw-bold m-0 h4"><i class="bi bi-search me-3 text-success"></i>Ask RAG: Doctor Recommendation</h3>
+        </div>
+
+        <div class="medical-card p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Patient Diseases / Symptoms</label>
+                    <textarea name="disease_query" class="form-control" rows="3"
+                        placeholder="e.g., headache, chest pain, cough...">{{ rag_question|default:'' }}</textarea>
+                </div>
+                {% if rag_error %}
+                <div class="alert alert-warning mb-3">{{ rag_error }}</div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary px-4 fw-bold">
+                    Ask RAG for Recommendations
+                </button>
+            </form>
+
+            {% if rag_answer %}
+            <div id="ragRecommendation" class="rag-answer mt-3" data-created-at="{{ rag_created_at|default:'' }}">
+                <div class="small text-uppercase fw-bold text-muted mb-2">Recommendations</div>
+                <div class="fw-medium">{{ rag_answer|linebreaksbr }}</div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -42,7 +76,7 @@
                 <div class="medical-card p-5 border-start-emerald">
                     <div class="d-flex align-items-center gap-3 mb-4 pb-4 border-bottom">
                         <div class="rounded-pill bg-light p-2 border">
-                            <i class="bi bi-person-badge text-primary px-1"></i>
+                            <i class="bi bi-person"></i>
                         </div>
                         <div>
                             <h5 class="fw-bold mb-0">Dr. {{ appointment.doctor.first_name }} {{appointment.doctor.last_name }}</h5>
@@ -91,6 +125,52 @@
         {% endif %}
     </div>
 
+    <!-- Doctor Notes -->
+    <div class="mb-5 pb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h3 class="fw-bold m-0 h4"><i class="bi bi-journal-medical me-3 text-success"></i>Prescriptions & Suggestions</h3>
+        </div>
+
+        {% if doctor_notes %}
+        <div class="row g-4">
+            {% for note in doctor_notes %}
+            <div class="col-12">
+                <div class="medical-card p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="badge bg-success-subtle text-success fw-bold px-3 py-2">
+                            {{ note.created_at|date:"M d, Y h:i A" }}
+                        </span>
+                        <span class="small text-muted fw-semibold">
+                            {% if note.doctor %}By Dr. {{ note.doctor.last_name }}{% else %}By Staff{% endif %}
+                        </span>
+                    </div>
+
+                    {% if note.prescription %}
+                    <div class="mb-3">
+                        <div class="text-muted small fw-bold text-uppercase mb-1">Prescription</div>
+                        <div class="fw-medium">{{ note.prescription|linebreaksbr }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if note.suggestion %}
+                    <div>
+                        <div class="text-muted small fw-bold text-uppercase mb-1">Suggestion</div>
+                        <div class="fw-medium">{{ note.suggestion|linebreaksbr }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="medical-card text-center py-5 border-dashed bg-light">
+            <i class="bi bi-journal-x display-4 text-muted d-block mb-3 opacity-25"></i>
+            <h5 class="fw-bold text-secondary">No prescriptions or suggestions yet</h5>
+            <p class="text-muted small mb-0">Doctor notes will appear here after your visit.</p>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Files -->
     <div class="mt-5">
         <h3 class="fw-bold mb-5 h4"><i class="bi bi-folder2-open me-3 text-success"></i>Medical Files</h3>
@@ -112,7 +192,7 @@
 
                             <div class="d-flex gap-3 small fw-semibold">
                                 <a href="{{ file.file.url }}" target="_blank" class="text-decoration-none text-primary">
-                                    <i class="bi bi-eye me-1"></i>Open
+                                   Open
                                 </a>
                                 <a href="{% url 'hospital:download_patient_file' file.id %}" class="text-decoration-none text-secondary">
                                     <i class="bi bi-download me-1"></i>Download
@@ -155,5 +235,32 @@
         font-size: 0.75rem;
         letter-spacing: 0.5px;
     }
+
+    .rag-answer {
+        background: #f8fbff;
+        border: 1px dashed #cbd5f5;
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+        color: #0f172a;
+        font-size: 0.95rem;
+    }
 </style>
+
+<script>
+    (function () {
+        const block = document.getElementById("ragRecommendation");
+        if (!block) return;
+        const createdAt = block.getAttribute("data-created-at");
+        const createdMs = createdAt ? Date.parse(createdAt) : NaN;
+        if (Number.isNaN(createdMs)) return;
+        const elapsed = Date.now() - createdMs;
+        const remaining = 20000 - elapsed;
+        const removeBlock = () => block.remove();
+        if (remaining <= 0) {
+            removeBlock();
+        } else {
+            setTimeout(removeBlock, remaining);
+        }
+    })();
+</script>
 {% endblock %}

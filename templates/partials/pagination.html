@@ -1,0 +1,43 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4" aria-label="Pagination">
+    <ul class="pagination justify-content-center mb-0">
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+            <a class="page-link"
+               href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}{% else %}#{% endif %}">
+                Previous
+            </a>
+        </li>
+
+        {% if page_start > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if querystring %}&{{ querystring }}{% endif %}">1</a>
+        </li>
+        {% if page_start > 2 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        {% endif %}
+
+        {% for page_num in page_window %}
+        <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ page_num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ page_num }}</a>
+        </li>
+        {% endfor %}
+
+        {% if page_end < page_total %}
+        {% if page_end < page_total|add:"-1" %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_total }}{% if querystring %}&{{ querystring }}{% endif %}">{{ page_total }}</a>
+        </li>
+        {% endif %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+            <a class="page-link"
+               href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}{% else %}#{% endif %}">
+                Next
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}

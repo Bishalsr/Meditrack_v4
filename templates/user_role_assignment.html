@@ -2,6 +2,20 @@
 
 {% block title %}User Role Assignment | MediTrack{% endblock %}
 
+{% block extra_head %}
+<style>
+    .fw-black {
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .x-small {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="d-flex align-items-center justify-content-between mb-5 flex-wrap g-3">
@@ -39,15 +53,15 @@
                         </td>
                         <td class="py-3">
                             {% if target_user.is_superuser %}
-                            <span class="badge bg-dark-subtle text-dark fw-bold">Superuser</span>
+                            <span class="badge bg-primary-light text-dark fw-bold">Superuser</span>
                             {% elif target_user.is_receptionist %}
-                            <span class="badge bg-primary-light text-primary fw-bold">Receptionist</span>
+                            <span class="badge bg-primary-light text-dark fw-bold">Receptionist</span>
                             {% elif target_user.is_doctor %}
-                            <span class="badge bg-success-subtle text-success fw-bold">Doctor</span>
+                            <span class="badge bg-primary-light text-dark fw-bold">Doctor</span>
                             {% elif target_user.is_patient %}
-                            <span class="badge bg-info-subtle text-info fw-bold">Patient</span>
+                            <span class="badge bg-primary-light text-dark fw-bold">Patient</span>
                             {% else %}
-                            <span class="badge bg-secondary-subtle text-muted fw-bold">Unassigned</span>
+                            <span class="badge bg-primary-light text-muted fw-bold">Unassigned</span>
                             {% endif %}
                         </td>
                         <td class="py-3 text-muted">{{ target_user.date_joined|date:"M d, Y h:i A" }}</td>
@@ -55,10 +69,10 @@
                             {% if target_user.is_superuser %}
                             <span class="text-muted small fw-bold">Manage in Admin Panel</span>
                             {% else %}
-                            <form method="post" class="d-inline-flex gap-2 align-items-center">
+                            <form method="post" class="d-inline-flex gap-2 align-items-center" data-role-form>
                                 {% csrf_token %}
                                 <input type="hidden" name="user_id" value="{{ target_user.id }}">
-                                <select name="role" class="form-select form-select-sm" style="min-width: 180px;">
+                                <select name="role" class="form-select form-select-sm" style="min-width: 180px;" disabled data-role-select>
                                     <option value="patient" {% if target_user.is_patient and not target_user.is_doctor and not target_user.is_receptionist %}selected{% endif %}>Patient</option>
                                     <option value="doctor" {% if target_user.is_doctor %}selected{% endif %}>Doctor</option>
                                     {% if allow_receptionist_role %}
@@ -68,8 +82,14 @@
                                     <option value="unassigned" {% if not target_user.is_patient and not target_user.is_doctor and not target_user.is_receptionist and not target_user.is_superuser %}selected{% endif %}>Unassigned</option>
                                     {% endif %}
                                 </select>
-                                <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-3" data-role-action="edit">
+                                    Edit
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary fw-bold px-3" data-role-action="save" disabled>
                                     Save
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger fw-bold px-3" data-role-action="cancel" disabled>
+                                    Cancel
                                 </button>
                             </form>
                             {% endif %}
@@ -85,16 +105,85 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-    .fw-black {
-        font-weight: 800;
-        letter-spacing: -1px;
+{% block extra_scripts %}
+<script>
+document.addEventListener("click", function (event) {
+    const actionBtn = event.target.closest("[data-role-action]");
+    if (!actionBtn) {
+        return;
     }
 
-    .x-small {
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
+    const form = actionBtn.closest("[data-role-form]");
+    if (!form) {
+        return;
     }
-</style>
+
+    const select = form.querySelector("[data-role-select]");
+    const saveBtn = form.querySelector("[data-role-action='save']");
+    const editBtn = form.querySelector("[data-role-action='edit']");
+    const cancelBtn = form.querySelector("[data-role-action='cancel']");
+    if (!select || !saveBtn || !editBtn || !cancelBtn) {
+        return;
+    }
+
+    if (actionBtn.dataset.roleAction === "edit") {
+        select.disabled = false;
+        select.dataset.originalValue = select.value;
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+        editBtn.disabled = true;
+        saveBtn.textContent = "Save";
+        saveBtn.className = "btn btn-sm btn-outline-secondary fw-bold px-3";
+        return;
+    }
+
+    if (actionBtn.dataset.roleAction === "cancel") {
+        select.value = select.dataset.originalValue || select.value;
+        select.disabled = true;
+        saveBtn.disabled = true;
+        cancelBtn.disabled = true;
+        editBtn.disabled = false;
+    }
+});
+
+document.addEventListener("change", function (event) {
+    const select = event.target.closest("[data-role-select]");
+    if (!select) {
+        return;
+    }
+
+    const form = select.closest("[data-role-form]");
+    if (!form) {
+        return;
+    }
+
+    const saveBtn = form.querySelector("[data-role-action='save']");
+    if (saveBtn) {
+        saveBtn.disabled = false;
+    }
+});
+
+document.addEventListener("submit", function (event) {
+    const form = event.target.closest("[data-role-form]");
+    if (!form) {
+        return;
+    }
+
+    const select = form.querySelector("[data-role-select]");
+    const saveBtn = form.querySelector("[data-role-action='save']");
+    const editBtn = form.querySelector("[data-role-action='edit']");
+    const cancelBtn = form.querySelector("[data-role-action='cancel']");
+    if (!select || !saveBtn || !editBtn || !cancelBtn) {
+        return;
+    }
+
+    saveBtn.disabled = true;
+    cancelBtn.disabled = true;
+    editBtn.disabled = true;
+    saveBtn.textContent = "Saved";
+    saveBtn.className = "btn btn-sm btn-success fw-bold px-3";
+});
+</script>
 {% endblock %}
