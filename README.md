@@ -35,7 +35,7 @@ It supports role-based dashboards for **Admin**, **Receptionist**, **Doctor**, a
 
 - Python
 - Django
-- SQLite (default)
+- SQLite (default)/ PostgreSQL
 - django-allauth
 - django-jazzmin
 - Bootstrap (templates)
