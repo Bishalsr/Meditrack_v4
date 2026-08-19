@@ -134,7 +134,7 @@ Open:
 - `GET /patient-files/download/<file_id>/` - secure patient file download
 - `GET /user-role-assignment/` - role assignment (admin/receptionist)
 
-## Session Behavior (Important)
+## Session Behavior
 
 This project uses custom middleware `SplitSessionMiddleware` (`meditrack/middleware.py`) to separate:
 
@@ -156,7 +156,7 @@ Run:
 python manage.py check
 ```
 
-## Notes for Production
+## Notes for Production(If anyone want to use this project)
 
 - Set `DEBUG=False`
 - Use a strong `SECRET_KEY` from environment
