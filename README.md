@@ -165,10 +165,3 @@ python manage.py check
 - Serve static/media via proper web server or storage service
 - Configure secure cookies/HTTPS
 
----
-
-If you want, I can also add:
-- API documentation section
-- screenshots section
-- deployment steps (Render/Railway/EC2)
-- contributor/developer workflow section
